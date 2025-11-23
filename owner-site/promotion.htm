@@ -1,0 +1,1276 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title data-i18n="title">Owner Portal — Promotions</title>
+
+  <!-- Perfect light/dark on mobile -->
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1220">
+
+  <style>
+    :root{
+      --brand:#0f3b66; --brand-2:#1a5aa0; --accent:#ff9900;
+      --bg:#f6f8fb; --card:#ffffff; --text:#0b1220; --muted:#6b7280; --line:#e5e7eb;
+      --ok:#10b981; --warn:#f59e0b; --danger:#ef4444; --chip:#eef2ff;
+      --shadow:0 10px 28px rgba(0,0,0,.08);
+    }
+    html[data-theme="dark"]{
+      --bg:#0b1220; --card:#111827; --text:#f7f8fd; --muted:#9aa3b2; --line:#1f2937;
+      --chip:#1f2937; --shadow:0 10px 32px rgba(0,0,0,.45);
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.45}
+
+    /* Layout */
+    .app{min-height:100vh;display:grid;grid-template-rows:auto 1fr}
+    header.top{
+      position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--line);
+      display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px
+    }
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,var(--brand),var(--brand-2));box-shadow:0 8px 26px rgba(15,59,102,.28)}
+    .brand strong{letter-spacing:.35px}
+    .top-ctrls{display:flex;gap:8px;align-items:center}
+    .icon-btn,.btn{
+      border:1px solid var(--line);background:transparent;color:var(--text);height:38px;padding:0 12px;border-radius:10px;cursor:pointer;font-weight:800
+    }
+    .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+    .btn.accent{background:var(--accent);border-color:var(--accent);color:#111}
+    .btn.ghost{background:transparent}
+    .btn.danger{border-color:rgba(239,68,68,.45);color:var(--danger)}
+    .chip{background:var(--chip);border:1px solid var(--line);padding:6px 10px;border-radius:999px;font-size:.9rem;color:var(--brand);font-weight:900}
+
+    /* 3-column grid */
+    .grid{
+      padding:14px;display:grid;grid-template-columns:320px minmax(420px, 1fr) 380px;gap:12px
+    }
+    @media (max-width: 1240px){ .grid{grid-template-columns:320px 1fr} .preview{grid-column:1/-1} }
+    @media (max-width: 760px){ .grid{grid-template-columns:1fr} }
+
+    .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;box-shadow:var(--shadow)}
+    .panel h3{margin:6px 6px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:1.02rem}
+
+    /* LEFT — Audience & Settings */
+    .group{display:grid;gap:10px;margin-bottom:12px}
+    label{font-weight:800;font-size:.92rem}
+    input[type="text"], input[type="search"], input[type="email"], textarea, select, input[type="datetime-local"]{
+      width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:transparent;color:var(--text)
+    }
+    textarea{min-height:80px;resize:vertical}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .muted{color:var(--muted);font-size:.92rem}
+    .help{font-size:.88rem;color:var(--muted)}
+
+    /* CENTER — Builder */
+    .builder-tools{display:flex;gap:8px;flex-wrap:wrap}
+    .block-list{display:grid;gap:10px}
+    .block{
+      border:1px solid var(--line);border-radius:14px;padding:12px;background:linear-gradient(180deg,transparent,rgba(127,127,127,.03));
+      display:grid;gap:8px
+    }
+    .block-head{display:flex;align-items:center;justify-content:space-between}
+    .block-title{font-weight:900}
+    .block-ctrls{display:flex;gap:6px}
+    .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    @media (max-width: 520px){ .two{grid-template-columns:1fr} }
+
+    /* RIGHT — Preview */
+    .preview-tabs{display:flex;gap:6px;margin-bottom:8px}
+    .preview-canvas{
+      background:#f1f5f9; border:1px solid var(--line); border-radius:14px; overflow:auto;
+      height:70vh; padding:0; display:grid; place-items:start; 
+    }
+    .preview-inner{background:#fff; margin:18px auto; border:1px solid #e5e7eb; width:760px; border-radius:12px; overflow:hidden}
+    .preview-mobile .preview-inner{width:380px}
+    .preview-plain .preview-inner{width:760px; background:#111; color:#0f0; font-family:ui-monospace, Menlo, Consolas, monospace; padding:14px}
+
+    /* Footer line */
+    footer{padding:16px;color:var(--muted);text-align:center}
+
+    /* Skeleton / placeholders */
+    .skeleton{background:linear-gradient(90deg,#e5e7eb 25%,#f3f4f6 37%,#e5e7eb 63%);background-size:400% 100%;animation:s 1.3s infinite}
+    @keyframes s{0%{background-position:100% 50%}100%{background-position:0 50%}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header class="top">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <strong data-i18n="header.title">Promotions</strong>
+        <span class="chip" id="statusChip" data-i18n="status.draft">Draft</span>
+      </div>
+      <div class="top-ctrls">
+        <button id="langToggle" class="icon-btn" title="Language">EN</button>
+        <button id="themeToggle" class="icon-btn" title="Theme">🌓</button>
+        <button id="saveDraftBtn" class="btn" data-i18n="btn.saveDraft">Save Draft</button>
+        <button id="saveTemplateBtn" class="btn" data-i18n="btn.saveTemplate">Save as Template</button>
+        <button id="sendTestBtn" class="btn" data-i18n="btn.sendTest">Send Test</button>
+        <button id="scheduleBtn" class="btn" data-i18n="btn.schedule">Schedule</button>
+        <button id="sendNowBtn" class="btn primary" data-i18n="btn.sendNow">Send Now</button>
+      </div>
+    </header>
+
+    <!-- Grid -->
+    <section class="grid">
+      <!-- LEFT: Audience & Settings -->
+      <aside class="panel">
+        <h3><span data-i18n="left.audience">Audience & Settings</span></h3>
+
+        <div class="group">
+          <label data-i18n="label.fromName">From name</label>
+          <input id="fromName" type="text" placeholder="Yours Shop">
+        </div>
+        <div class="group">
+          <label data-i18n="label.fromEmail">From email</label>
+          <input id="fromEmail" type="email" placeholder="promotions@yours-shop.com">
+          <div class="help" data-i18n="hint.fromVerified">Use a verified sender domain in your email provider.</div>
+        </div>
+
+        <div class="group">
+          <label data-i18n="label.subject">Subject</label>
+          <input id="subject" type="text" maxlength="120" placeholder="Don't miss our biggest deals">
+          <div class="row"><small class="muted" id="subjectCount">0/120</small></div>
+        </div>
+
+        <div class="group">
+          <label data-i18n="label.preheader">Preheader</label>
+          <input id="preheader" type="text" maxlength="120" placeholder="Early access + free shipping inside">
+        </div>
+
+        <hr style="border:0;border-top:1px solid var(--line)">
+
+        <div class="group">
+          <label data-i18n="label.theme">Email theme</label>
+          <select id="themeSelect">
+            <option value="minimal" data-i18n="theme.minimal">Minimal</option>
+            <option value="storefront" data-i18n="theme.storefront">Storefront</option>
+            <option value="bold" data-i18n="theme.bold">Bold Color</option>
+            <option value="holiday" data-i18n="theme.holiday">Holiday</option>
+            <option value="bf" data-i18n="theme.bf">Black Friday</option>
+            <option value="winback" data-i18n="theme.winback">Win-back</option>
+            <option value="announce" data-i18n="theme.announce">Announcement</option>
+          </select>
+        </div>
+
+        <div class="group">
+          <label data-i18n="label.language">Email language</label>
+          <select id="contentLang">
+            <option value="en">English (EN)</option>
+            <option value="fr">Français (FR)</option>
+          </select>
+          <div class="help" data-i18n="hint.lang">You can prepare EN or FR content; recipients without a preference get EN by default.</div>
+        </div>
+
+        <hr style="border:0;border-top:1px solid var(--line)">
+
+        <div class="group">
+          <label data-i18n="label.sendTo">Send to</label>
+          <select id="audMode">
+            <option value="all" data-i18n="aud.all">All customers</option>
+            <option value="regions" data-i18n="aud.regions">By region</option>
+            <option value="custom" data-i18n="aud.custom">Custom filter</option>
+          </select>
+        </div>
+
+        <div class="group" id="regionGroup" style="display:none">
+          <label data-i18n="label.regions">Regions</label>
+          <select id="regionsSelect" multiple size="8"></select>
+          <div class="help" data-i18n="hint.multi">Hold Ctrl/⌘ to choose multiple regions.</div>
+        </div>
+
+        <div class="group" id="customGroup" style="display:none">
+          <label data-i18n="label.filters">Filters</label>
+          <div class="row">
+            <label class="row"><input id="filterOptIn" type="checkbox" checked> <span data-i18n="f.optin">Subscribed (marketingOptIn)</span></label>
+          </div>
+          <div class="row">
+            <label class="row"><input id="filterVerified" type="checkbox"> <span data-i18n="f.verified">Email verified</span></label>
+          </div>
+          <div class="row">
+            <label class="row"><input id="filterRecent" type="checkbox"> <span data-i18n="f.recent">Ordered in last 90 days</span></label>
+          </div>
+          <div class="row">
+            <label class="row"><input id="filterHighValue" type="checkbox"> <span data-i18n="f.high">High-value customers</span></label>
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="row" style="justify-content:space-between">
+            <strong data-i18n="label.estimate">Estimated recipients</strong>
+            <span id="recipientCount" class="chip skeleton" style="min-width:72px;text-align:center">—</span>
+          </div>
+          <button id="refreshAudienceBtn" class="btn" data-i18n="btn.refreshAudience">Refresh audience</button>
+        </div>
+
+        <hr style="border:0;border-top:1px solid var(--line)">
+
+        <div class="group">
+          <label data-i18n="label.schedule">Schedule (optional)</label>
+          <input id="scheduleAt" type="datetime-local">
+          <div class="help" data-i18n="hint.schedule">Leave empty to send immediately.</div>
+        </div>
+
+        <div class="group">
+          <label data-i18n="label.testTo">Send test to</label>
+          <div class="row">
+            <input id="testEmail" type="email" placeholder="owner@yours-shop.com" style="flex:1">
+            <button id="quickTestBtn" class="btn" data-i18n="btn.quickTest">Send</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- CENTER: Builder -->
+      <section class="panel">
+        <h3>
+          <span data-i18n="center.builder">Email Builder</span>
+          <span class="builder-tools">
+            <select id="addBlockSelect">
+              <option value="" data-i18n="add.choose">+ Add block…</option>
+              <option value="hero" data-i18n="add.hero">Hero (image + headline + CTA)</option>
+              <option value="text" data-i18n="add.text">Text (title + paragraph)</option>
+              <option value="cta" data-i18n="add.cta">Button</option>
+              <option value="twocol" data-i18n="add.twocol">Two-column (image + text)</option>
+              <option value="products" data-i18n="add.products">Product grid</option>
+              <option value="coupon" data-i18n="add.coupon">Coupon banner</option>
+              <option value="testimonial" data-i18n="add.testimonial">Testimonial</option>
+              <option value="footer" data-i18n="add.footer">Footer</option>
+            </select>
+            <button id="clearBlocksBtn" class="btn danger" data-i18n="btn.clear">Clear</button>
+          </span>
+        </h3>
+
+        <div class="group">
+          <label data-i18n="label.internalName">Internal name</label>
+          <input id="promoName" type="text" placeholder="Black Friday 2025 — All regions">
+        </div>
+
+        <div id="blockList" class="block-list" aria-live="polite"></div>
+
+        <div class="group">
+          <label data-i18n="label.footerAddress">Company address (footer)</label>
+          <textarea id="companyAddress" placeholder="Yours Shop, 123 Commerce St, Douala, Cameroon"></textarea>
+        </div>
+
+        <div class="row" style="justify-content:flex-end">
+          <button id="rebuildPreviewBtn" class="btn" data-i18n="btn.preview">Update Preview</button>
+        </div>
+      </section>
+
+      <!-- RIGHT: Preview -->
+      <aside class="panel preview">
+        <h3><span data-i18n="right.preview">Live Preview</span></h3>
+        <div class="preview-tabs">
+          <button id="tabDesktop" class="btn" data-i18n="tab.desktop">Desktop</button>
+          <button id="tabMobile" class="btn" data-i18n="tab.mobile">Mobile</button>
+          <button id="tabPlain" class="btn" data-i18n="tab.plain">Plain-text</button>
+          <button id="downloadHtmlBtn" class="btn ghost" data-i18n="btn.downloadHtml">Download HTML</button>
+        </div>
+        <div id="previewCanvas" class="preview-canvas">
+          <div class="preview-inner" id="previewInner">
+            <div style="padding:16px" class="muted" data-i18n="preview.empty">Start adding blocks to see the preview…</div>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <footer><small>&copy; <span id="year"></span> Owner Portal — Promotions</small></footer>
+  </div>
+
+  <!-- Cloudinary widget -->
+  <script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
+
+  <!-- Firebase v10 (modules) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import {
+      getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import {
+      getFirestore, collection, query, where, getDocs, doc, setDoc, addDoc, serverTimestamp, getDoc, getCountFromServer
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+    /* ================== Config ================== */
+    const firebaseConfig = {
+      apiKey: "AIzaSyCz446b_SZF8L1HykjAeHrc9LK9GVWX4Q4",
+      authDomain: "your-shop-3bdd1.firebaseapp.com",
+      projectId: "your-shop-3bdd1",
+      storageBucket: "your-shop-3bdd1.appspot.com",
+      messagingSenderId: "440558238881",
+      appId: "1:440558238881:web:b1594dc8a4bfd9089dc4e0"
+    };
+
+    const CLOUDINARY = {
+      cloudName: "divjjbwit",
+      uploadPreset: "unsigned_preset"
+    };
+
+    const REGIONS = [
+      {en:"Adamawa", fr:"Adamaoua"},
+      {en:"Centre", fr:"Centre"},
+      {en:"East", fr:"Est"},
+      {en:"Far North", fr:"Extrême-Nord"},
+      {en:"Littoral", fr:"Littoral"},
+      {en:"North", fr:"Nord"},
+      {en:"North-West", fr:"Nord-Ouest"},
+      {en:"West", fr:"Ouest"},
+      {en:"South", fr:"Sud"},
+      {en:"South-West", fr:"Sud-Ouest"}
+    ];
+
+    /* ================== I18N & Theme ================== */
+    const I18N = {
+      en:{
+        title:"Owner Portal — Promotions",
+        "header.title":"Promotions",
+        "status.draft":"Draft",
+        "btn.saveDraft":"Save Draft",
+        "btn.saveTemplate":"Save as Template",
+        "btn.sendTest":"Send Test",
+        "btn.schedule":"Schedule",
+        "btn.sendNow":"Send Now",
+        "left.audience":"Audience & Settings",
+        "label.fromName":"From name",
+        "label.fromEmail":"From email",
+        "hint.fromVerified":"Use a verified sender domain in your email provider.",
+        "label.subject":"Subject",
+        "label.preheader":"Preheader",
+        "label.theme":"Email theme",
+        "theme.minimal":"Minimal",
+        "theme.storefront":"Storefront",
+        "theme.bold":"Bold Color",
+        "theme.holiday":"Holiday",
+        "theme.bf":"Black Friday",
+        "theme.winback":"Win-back",
+        "theme.announce":"Announcement",
+        "label.language":"Email language",
+        "hint.lang":"You can prepare EN or FR content; recipients without a preference get EN by default.",
+        "label.sendTo":"Send to",
+        "aud.all":"All customers",
+        "aud.regions":"By region",
+        "aud.custom":"Custom filter",
+        "label.regions":"Regions",
+        "hint.multi":"Hold Ctrl/⌘ to choose multiple regions.",
+        "label.filters":"Filters",
+        "f.optin":"Subscribed (marketingOptIn)",
+        "f.verified":"Email verified",
+        "f.recent":"Ordered in last 90 days",
+        "f.high":"High-value customers",
+        "label.estimate":"Estimated recipients",
+        "btn.refreshAudience":"Refresh audience",
+        "label.schedule":"Schedule (optional)",
+        "hint.schedule":"Leave empty to send immediately.",
+        "label.testTo":"Send test to",
+        "btn.quickTest":"Send",
+        "center.builder":"Email Builder",
+        "add.choose":"+ Add block…",
+        "add.hero":"Hero (image + headline + CTA)",
+        "add.text":"Text (title + paragraph)",
+        "add.cta":"Button",
+        "add.twocol":"Two-column (image + text)",
+        "add.products":"Product grid",
+        "add.coupon":"Coupon banner",
+        "add.testimonial":"Testimonial",
+        "add.footer":"Footer",
+        "btn.clear":"Clear",
+        "label.internalName":"Internal name",
+        "label.footerAddress":"Company address (footer)",
+        "btn.preview":"Update Preview",
+        "right.preview":"Live Preview",
+        "tab.desktop":"Desktop",
+        "tab.mobile":"Mobile",
+        "tab.plain":"Plain-text",
+        "btn.downloadHtml":"Download HTML",
+        "preview.empty":"Start adding blocks to see the preview…"
+      },
+      fr:{
+        title:"Portail Propriétaire — Promotions",
+        "header.title":"Promotions",
+        "status.draft":"Brouillon",
+        "btn.saveDraft":"Enregistrer le brouillon",
+        "btn.saveTemplate":"Enregistrer comme modèle",
+        "btn.sendTest":"Envoyer un test",
+        "btn.schedule":"Planifier",
+        "btn.sendNow":"Envoyer maintenant",
+        "left.audience":"Cible & Paramètres",
+        "label.fromName":"Nom de l’expéditeur",
+        "label.fromEmail":"E-mail de l’expéditeur",
+        "hint.fromVerified":"Utilisez un domaine expéditeur vérifié chez votre fournisseur d’e-mails.",
+        "label.subject":"Objet",
+        "label.preheader":"Pré-en-tête",
+        "label.theme":"Thème de l’e-mail",
+        "theme.minimal":"Minimal",
+        "theme.storefront":"Vitrine",
+        "theme.bold":"Couleurs vives",
+        "theme.holiday":"Fêtes",
+        "theme.bf":"Black Friday",
+        "theme.winback":"Récupération",
+        "theme.announce":"Annonce",
+        "label.language":"Langue de l’e-mail",
+        "hint.lang":"Vous pouvez préparer EN ou FR ; les destinataires sans préférence reçoivent EN par défaut.",
+        "label.sendTo":"Envoyer à",
+        "aud.all":"Tous les clients",
+        "aud.regions":"Par région",
+        "aud.custom":"Filtre personnalisé",
+        "label.regions":"Régions",
+        "hint.multi":"Maintenez Ctrl/⌘ pour choisir plusieurs régions.",
+        "label.filters":"Filtres",
+        "f.optin":"Inscrits (marketingOptIn)",
+        "f.verified":"E-mail vérifié",
+        "f.recent":"Commandes sur 90 jours",
+        "f.high":"Clients à forte valeur",
+        "label.estimate":"Destinataires estimés",
+        "btn.refreshAudience":"Actualiser la cible",
+        "label.schedule":"Planifier (optionnel)",
+        "hint.schedule":"Laissez vide pour envoyer immédiatement.",
+        "label.testTo":"Envoyer un test à",
+        "btn.quickTest":"Envoyer",
+        "center.builder":"Éditeur d’e-mail",
+        "add.choose":"+ Ajouter un bloc…",
+        "add.hero":"Hero (image + titre + CTA)",
+        "add.text":"Texte (titre + paragraphe)",
+        "add.cta":"Bouton",
+        "add.twocol":"Deux colonnes (image + texte)",
+        "add.products":"Grille de produits",
+        "add.coupon":"Bannière coupon",
+        "add.testimonial":"Témoignage",
+        "add.footer":"Pied de page",
+        "btn.clear":"Vider",
+        "label.internalName":"Nom interne",
+        "label.footerAddress":"Adresse entreprise (pied de page)",
+        "btn.preview":"Mettre à jour l’aperçu",
+        "right.preview":"Aperçu en direct",
+        "tab.desktop":"Bureau",
+        "tab.mobile":"Mobile",
+        "tab.plain":"Texte brut",
+        "btn.downloadHtml":"Télécharger HTML",
+        "preview.empty":"Ajoutez des blocs pour voir l’aperçu…"
+      }
+    };
+
+    const $ = (s)=>document.querySelector(s);
+    const $$ = (s)=>document.querySelectorAll(s);
+
+    const State = {
+      uiLang: localStorage.getItem("lang") || "en",
+      theme: localStorage.getItem("theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"),
+      promotion: {
+        name: "",
+        fromName: "Yours Shop",
+        fromEmail: "",
+        subject: "",
+        preheader: "",
+        theme: "minimal",
+        contentLang: "en",
+        blocks: [],
+        companyAddress: "",
+        audience: { mode:"all", regions:[], filters:{ optIn:true, verified:false, recent:false, high:false } },
+        scheduleAt: null,
+        createdBy: null
+      },
+      previewMode: "desktop",
+      app:null, auth:null, db:null, user:null
+    };
+
+    function t(key){ return (I18N[State.uiLang] && I18N[State.uiLang][key]) || key; }
+    function applyLang(){
+      document.documentElement.lang = State.uiLang;
+      document.title = t("title");
+      $("#langToggle").textContent = State.uiLang.toUpperCase();
+      $$("[data-i18n]").forEach(el=>{
+        const k = el.getAttribute("data-i18n");
+        if(!k) return;
+        el.textContent = t(k);
+      });
+      // options placeholders
+      $$("#addBlockSelect option, #themeSelect option").forEach(o=>{
+        const k = o.getAttribute("data-i18n");
+        if(k) o.textContent = t(k);
+      });
+      fillRegions();
+    }
+    function applyTheme(){
+      document.documentElement.setAttribute("data-theme", State.theme);
+      document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{
+        m.setAttribute("content", State.theme==="dark" ? "#0b1220" : "#ffffff");
+      });
+      $("#themeToggle").textContent="🌓";
+    }
+
+    $("#langToggle").addEventListener("click", ()=>{
+      State.uiLang = (State.uiLang==="en" ? "fr" : "en");
+      localStorage.setItem("lang", State.uiLang);
+      applyLang();
+      renderBlocks(); // refresh block editor labels that depend on language
+      estimateAudience();
+    });
+    $("#themeToggle").addEventListener("click", ()=>{
+      State.theme = (State.theme==="light" ? "dark" : "light");
+      localStorage.setItem("theme", State.theme);
+      applyTheme();
+    });
+    $("#year").textContent = new Date().getFullYear();
+
+    /* ================== Regions & Audience ================== */
+    function fillRegions(){
+      const sel = $("#regionsSelect"); if(!sel) return;
+      const prev = Array.from(sel.selectedOptions).map(o=>o.value);
+      sel.innerHTML = "";
+      REGIONS.forEach(r=>{
+        const opt = document.createElement("option");
+        opt.value = r.en; // keep EN as value
+        opt.textContent = (State.uiLang==="fr" ? r.fr : r.en);
+        if(prev.includes(opt.value)) opt.selected = true;
+        sel.appendChild(opt);
+      });
+    }
+
+    $("#audMode").addEventListener("change", ()=>{
+      const v = $("#audMode").value;
+      $("#regionGroup").style.display = (v==="regions") ? "" : "none";
+      $("#customGroup").style.display = (v==="custom") ? "" : "none";
+      estimateAudience();
+    });
+
+    /* ================== Cloudinary Upload ================== */
+    function openUploader(onDone){
+      const myWidget = cloudinary.createUploadWidget({
+        cloudName: CLOUDINARY.cloudName,
+        uploadPreset: CLOUDINARY.uploadPreset,
+        sources: ["local","url","camera"],
+        multiple:false, cropping:false, folder: "promotions",
+        maxImageFileSize: 5_000_000,
+        clientAllowedFormats: ["jpg","jpeg","png","webp"]
+      }, (error, result) => {
+        if (!error && result && result.event === "success") {
+          const url = result.info.secure_url;
+          onDone && onDone(url);
+          myWidget.close();
+        }
+      });
+      myWidget.open();
+    }
+
+    /* ================== Blocks ================== */
+    const blockList = $("#blockList");
+    const blockFactories = {
+      hero: ()=>({
+        type:"hero",
+        img:"", title:"Big headline here", text:"Short supporting copy here",
+        ctaText:"Shop now", ctaUrl:"https://yours-shop.com"
+      }),
+      text: ()=>({
+        type:"text",
+        title:"Section title", body:"Write your paragraph here. Keep it short and clear."
+      }),
+      cta: ()=>({
+        type:"cta",
+        text:"Browse offers", url:"https://yours-shop.com"
+      }),
+      twocol: ()=>({
+        type:"twocol",
+        img:"", title:"Left image, right text", body:"Explain your value in 2–3 lines.", reverse:false, ctaText:"See more", ctaUrl:"#"
+      }),
+      products: ()=>({
+        type:"products",
+        productIds:"",
+        columns:2
+      }),
+      coupon: ()=>({
+        type:"coupon",
+        code:"BLACKFRIDAY", expires:"", min:""
+      }),
+      testimonial: ()=>({
+        type:"testimonial",
+        quote:"“Amazing quality and fast delivery.”", author:"Happy Customer"
+      }),
+      footer: ()=>({
+        type:"footer"
+      })
+    };
+
+    function addBlock(kind){
+      const b = blockFactories[kind] ? blockFactories[kind]() : null;
+      if(!b) return;
+      State.promotion.blocks.push(b);
+      renderBlocks();
+      buildPreview();
+    }
+
+    $("#addBlockSelect").addEventListener("change", (e)=>{
+      const v = e.target.value; if(!v) return;
+      addBlock(v);
+      e.target.value = "";
+    });
+
+    $("#clearBlocksBtn").addEventListener("click", ()=>{
+      if(!confirm(State.uiLang==="fr" ? "Vider tous les blocs ?" : "Clear all blocks?")) return;
+      State.promotion.blocks = [];
+      renderBlocks(); buildPreview();
+    });
+
+    function renderBlocks(){
+      blockList.innerHTML = "";
+      State.promotion.blocks.forEach((b, idx)=>{
+        const el = document.createElement("div");
+        el.className = "block";
+        const head = document.createElement("div");
+        head.className = "block-head";
+        const title = document.createElement("div");
+        title.className = "block-title";
+        title.textContent = (b.type||"block").toUpperCase();
+        const ctrls = document.createElement("div");
+        ctrls.className = "block-ctrls";
+
+        const up = document.createElement("button"); up.className="btn"; up.textContent="↑";
+        up.title = "Move up"; up.onclick=()=>{ if(idx>0){ const tmp=State.promotion.blocks[idx-1]; State.promotion.blocks[idx-1]=b; State.promotion.blocks[idx]=tmp; renderBlocks(); buildPreview(); } };
+        const down = document.createElement("button"); down.className="btn"; down.textContent="↓";
+        down.title = "Move down"; down.onclick=()=>{ if(idx<State.promotion.blocks.length-1){ const tmp=State.promotion.blocks[idx+1]; State.promotion.blocks[idx+1]=b; State.promotion.blocks[idx]=tmp; renderBlocks(); buildPreview(); } };
+        const del = document.createElement("button"); del.className="btn danger"; del.textContent="✕";
+        del.title = "Remove"; del.onclick=()=>{ State.promotion.blocks.splice(idx,1); renderBlocks(); buildPreview(); };
+
+        ctrls.append(up, down, del);
+        head.append(title, ctrls);
+        el.append(head);
+
+        // fields per block
+        if(b.type==="hero"){
+          const r1 = document.createElement("div"); r1.className="two";
+          const imgRow = document.createElement("div"); imgRow.className="row";
+          const imgInput = document.createElement("input"); imgInput.type="text"; imgInput.placeholder="Image URL (Cloudinary)"; imgInput.value=b.img||"";
+          const upBtn = document.createElement("button"); upBtn.className="btn"; upBtn.textContent=(State.uiLang==="fr"?"Téléverser":"Upload");
+          upBtn.onclick = ()=> openUploader(url => { imgInput.value=url; b.img=url; buildPreview(); });
+          imgRow.append(imgInput, upBtn);
+          const t = document.createElement("input"); t.type="text"; t.placeholder="Headline"; t.value=b.title||"";
+          const p = document.createElement("input"); p.type="text"; p.placeholder="Supporting text"; p.value=b.text||"";
+          const ctaRow = document.createElement("div"); ctaRow.className="two";
+          const ct = document.createElement("input"); ct.type="text"; ct.placeholder="CTA text"; ct.value=b.ctaText||"";
+          const cu = document.createElement("input"); cu.type="text"; cu.placeholder="CTA link"; cu.value=b.ctaUrl||"";
+          [imgInput,t,p,ct,cu].forEach(x=> x.addEventListener("input", ()=>{
+            b.img = imgInput.value; b.title=t.value; b.text=p.value; b.ctaText=ct.value; b.ctaUrl=cu.value; buildPreview();
+          }));
+          r1.append(imgRow);
+          el.append(r1, t, p, ctaRow);
+          ctaRow.append(ct, cu);
+        }
+        if(b.type==="text"){
+          const t = document.createElement("input"); t.type="text"; t.placeholder="Title"; t.value=b.title||"";
+          const body = document.createElement("textarea"); body.placeholder="Paragraph"; body.value=b.body||"";
+          [t,body].forEach(x=> x.addEventListener("input", ()=>{ b.title=t.value; b.body=body.value; buildPreview(); }));
+          el.append(t, body);
+        }
+        if(b.type==="cta"){
+          const ct = document.createElement("input"); ct.type="text"; ct.placeholder="Button text"; ct.value=b.text||"";
+          const cu = document.createElement("input"); cu.type="text"; cu.placeholder="Button link"; cu.value=b.url||"";
+          [ct,cu].forEach(x=> x.addEventListener("input", ()=>{ b.text=ct.value; b.url=cu.value; buildPreview(); }));
+          el.append(ct, cu);
+        }
+        if(b.type==="twocol"){
+          const row = document.createElement("div"); row.className="two";
+          const left = document.createElement("div"); const right = document.createElement("div");
+          const imgRow = document.createElement("div"); imgRow.className="row";
+          const imgInput = document.createElement("input"); imgInput.type="text"; imgInput.placeholder="Image URL"; imgInput.value=b.img||"";
+          const upBtn = document.createElement("button"); upBtn.className="btn"; upBtn.textContent=(State.uiLang==="fr"?"Téléverser":"Upload");
+          upBtn.onclick = ()=> openUploader(url => { imgInput.value=url; b.img=url; buildPreview(); });
+          imgRow.append(imgInput, upBtn);
+          const title = document.createElement("input"); title.type="text"; title.placeholder="Title"; title.value=b.title||"";
+          const body = document.createElement("textarea"); body.placeholder="Paragraph"; body.value=b.body||"";
+          const meta = document.createElement("div"); meta.className="two";
+          const ct = document.createElement("input"); ct.type="text"; ct.placeholder="CTA text"; ct.value=b.ctaText||"";
+          const cu = document.createElement("input"); cu.type="text"; cu.placeholder="CTA link"; cu.value=b.ctaUrl||"";
+          const revRow = document.createElement("div"); revRow.className="row";
+          const revChk = document.createElement("input"); revChk.type="checkbox"; revChk.checked=!!b.reverse;
+          const revLbl = document.createElement("label"); revLbl.textContent=(State.uiLang==="fr"?"Inverser (image à droite)":"Reverse (image right)");
+          revRow.append(revChk, revLbl);
+          [imgInput,title,body,ct,cu,revChk].forEach(x=> x.addEventListener("input", ()=>{
+            b.img=imgInput.value; b.title=title.value; b.body=body.value; b.ctaText=ct.value; b.ctaUrl=cu.value; b.reverse=revChk.checked; buildPreview();
+          }));
+          left.append(imgRow); right.append(title, body, meta, revRow); meta.append(ct, cu); row.append(left, right); el.append(row);
+        }
+        if(b.type==="products"){
+          const ids = document.createElement("input"); ids.type="text"; ids.placeholder="Comma-separated product IDs"; ids.value=b.productIds||"";
+          const cols = document.createElement("select"); ["2","3","4"].forEach(n=>{ const o=document.createElement("option"); o.value=n; o.textContent=n+" columns"; cols.appendChild(o); });
+          cols.value = String(b.columns||2);
+          [ids, cols].forEach(x=> x.addEventListener("input", ()=>{ b.productIds=ids.value; b.columns=parseInt(cols.value||"2",10); buildPreview(); }));
+          el.append(ids, cols);
+        }
+        if(b.type==="coupon"){
+          const code = document.createElement("input"); code.type="text"; code.placeholder="Coupon code"; code.value=b.code||"";
+          const ex = document.createElement("input"); ex.type="text"; ex.placeholder="Expires (optional)"; ex.value=b.expires||"";
+          const min = document.createElement("input"); min.type="text"; min.placeholder="Minimum spend (optional)"; min.value=b.min||"";
+          ;[code,ex,min].forEach(x=> x.addEventListener("input", ()=>{ b.code=code.value; b.expires=ex.value; b.min=min.value; buildPreview(); }));
+          el.append(code, ex, min);
+        }
+        if(b.type==="testimonial"){
+          const q = document.createElement("textarea"); q.placeholder="Quote"; q.value=b.quote||"";
+          const a = document.createElement("input"); a.type="text"; a.placeholder="Author"; a.value=b.author||"";
+          ;[q,a].forEach(x=> x.addEventListener("input", ()=>{ b.quote=q.value; b.author=a.value; buildPreview(); }));
+          el.append(q, a);
+        }
+        if(b.type==="footer"){
+          const p = document.createElement("div"); p.className="muted"; p.textContent=(State.uiLang==="fr"?"Le pied de page inclut automatiquement le lien de désabonnement.":"Footer automatically includes the unsubscribe link.");
+          el.append(p);
+        }
+
+        blockList.appendChild(el);
+      });
+    }
+
+    /* ================== Inputs that affect preview ================== */
+    $("#fromName").addEventListener("input", ()=> State.promotion.fromName = $("#fromName").value);
+    $("#fromEmail").addEventListener("input", ()=> State.promotion.fromEmail = $("#fromEmail").value);
+    $("#subject").addEventListener("input", ()=>{
+      State.promotion.subject = $("#subject").value;
+      $("#subjectCount").textContent = `${($("#subject").value||"").length}/120`;
+      buildPreview();
+    });
+    $("#preheader").addEventListener("input", ()=>{ State.promotion.preheader=$("#preheader").value; buildPreview(); });
+    $("#themeSelect").addEventListener("change", ()=>{ State.promotion.theme=$("#themeSelect").value; buildPreview(); });
+    $("#contentLang").addEventListener("change", ()=> State.promotion.contentLang=$("#contentLang").value);
+    $("#promoName").addEventListener("input", ()=> State.promotion.name=$("#promoName").value);
+    $("#companyAddress").addEventListener("input", ()=> State.promotion.companyAddress=$("#companyAddress").value);
+    $("#scheduleAt").addEventListener("change", ()=> State.promotion.scheduleAt = $("#scheduleAt").value ? new Date($("#scheduleAt").value) : null);
+
+    /* ================== Preview ================== */
+    $("#tabDesktop").addEventListener("click", ()=>{ State.previewMode="desktop"; updatePreviewMode(); });
+    $("#tabMobile").addEventListener("click", ()=>{ State.previewMode="mobile"; updatePreviewMode(); });
+    $("#tabPlain").addEventListener("click", ()=>{ State.previewMode="plain"; updatePreviewMode(); });
+    function updatePreviewMode(){
+      const pc = $("#previewCanvas");
+      pc.classList.remove("preview-mobile","preview-plain");
+      if(State.previewMode==="mobile") pc.classList.add("preview-mobile");
+      if(State.previewMode==="plain") pc.classList.add("preview-plain");
+      buildPreview();
+    }
+
+    $("#rebuildPreviewBtn").addEventListener("click", ()=>{ buildPreview(); });
+    $("#downloadHtmlBtn").addEventListener("click", async ()=>{
+      try{
+        const html = await buildEmailHTML(false);
+        const blob = new Blob([html], {type:"text/html;charset=utf-8"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a"); a.href=url; a.download=(State.promotion.name || "promotion") + ".html";
+        a.click(); URL.revokeObjectURL(url);
+      }catch(e){ alert("Could not build HTML."); console.error(e); }
+    });
+
+    async function buildPreview(){
+      const inner = $("#previewInner");
+      if(State.previewMode==="plain"){
+        const plain = buildPlainText();
+        inner.innerHTML = `<pre style="white-space:pre-wrap;padding:14px">${escapeHtml(plain)}</pre>`;
+        return;
+      }
+      const html = await buildEmailHTML(true); // in-editor preview
+      inner.innerHTML = html;
+    }
+
+    function escapeHtml(s){ return String(s||"").replace(/[&<>"']/g, m=>({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m])); }
+
+    // Themes (colors)
+    function themePalette(id){
+      switch(id){
+        case "storefront": return { bg:"#f7f8fb", card:"#ffffff", text:"#0b1220", accent:"#0f3b66", btn:"#0f3b66", btnText:"#ffffff" };
+        case "bold":       return { bg:"#0b1220", card:"#111827", text:"#f7f8fd", accent:"#ff9900", btn:"#ff9900", btnText:"#111" };
+        case "holiday":    return { bg:"#fffaf0", card:"#ffffff", text:"#0b1220", accent:"#0b9b6e", btn:"#0b9b6e", btnText:"#ffffff" };
+        case "bf":         return { bg:"#09090b", card:"#18181b", text:"#fafafa", accent:"#ffd814", btn:"#ffd814", btnText:"#111827" };
+        case "winback":    return { bg:"#f0f9ff", card:"#ffffff", text:"#0b1220", accent:"#0ea5e9", btn:"#0ea5e9", btnText:"#ffffff" };
+        case "announce":   return { bg:"#fff7ed", card:"#ffffff", text:"#0b1220", accent:"#f97316", btn:"#f97316", btnText:"#111827" };
+        default:           return { bg:"#ffffff", card:"#ffffff", text:"#0b1220", accent:"#0f3b66", btn:"#0f3b66", btnText:"#ffffff" };
+      }
+    }
+
+    // ✅ async builder unchanged
+    async function buildEmailHTML(inEditor=false){
+      const pal = themePalette(State.promotion.theme);
+      const subject = State.promotion.subject || "";
+      const pre = State.promotion.preheader || "";
+      const blocks = State.promotion.blocks || [];
+      const addr = State.promotion.companyAddress || "Yours Shop, Douala, Cameroon";
+      const unsubscribe = "{{unsubscribe_url}}";
+
+      const rows = [];
+      // Preheader (hidden)
+      rows.push(`
+        <!-- Preheader -->
+        <div style="display:none!important;max-height:0;overflow:hidden;opacity:0;color:transparent;height:0">${escapeHtml(pre)}</div>
+      `);
+
+      for(const b of blocks){
+        if(b.type==="hero"){
+          rows.push(heroRow(b, pal));
+        }
+        if(b.type==="text"){
+          rows.push(textRow(b, pal));
+        }
+        if(b.type==="cta"){
+          rows.push(ctaRow(b, pal));
+        }
+        if(b.type==="twocol"){
+          rows.push(twoColRow(b, pal));
+        }
+        if(b.type==="products"){
+          rows.push(await productsRow(b, pal));
+        }
+        if(b.type==="coupon"){
+          rows.push(couponRow(b, pal));
+        }
+        if(b.type==="testimonial"){
+          rows.push(testimonialRow(b, pal));
+        }
+        if(b.type==="footer"){
+          // footer placeholder; actual footer rendered after loop
+        }
+      }
+
+      // Footer (always add unsubscribe)
+      rows.push(footerRow({address:addr, accent:pal.accent, text:pal.text}, pal, unsubscribe));
+
+      const shell = `
+      <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:${pal.bg}">
+        <tr><td align="center" style="padding:24px 12px">
+          <table role="presentation" width="640" cellpadding="0" cellspacing="0" style="width:640px;max-width:100%;background:${pal.card};border-radius:12px;overflow:hidden;border:1px solid #e5e7eb">
+            <tr><td style="padding:18px 20px;border-bottom:1px solid #e5e7eb">
+              <div style="font-weight:900;letter-spacing:.4px;color:${pal.accent};font-family:Inter,Arial,sans-serif">YOURS SHOP</div>
+              ${pre ? `<div style="font-size:12px;color:#6b7280;margin-top:2px;font-family:Inter,Arial,sans-serif">${escapeHtml(pre)}</div>` : ""}
+            </td></tr>
+            <tr><td style="padding:0">
+              ${rows.join("\n")}
+            </td></tr>
+          </table>
+        </td></tr>
+      </table>`;
+
+      if(inEditor){
+        return `
+          <div style="background:${pal.bg};padding:12px">
+            <div style="max-width:640px;margin:0 auto;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;background:${pal.card}">
+              ${shell}
+            </div>
+          </div>`;
+      }
+      return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(subject)}</title></head><body>${shell}</body></html>`;
+    }
+
+    function heroRow(b, pal){
+      const img = b.img ? `<img src="${b.img}" alt="" width="640" style="display:block;width:100%;height:auto;border:0">` : "";
+      const title = escapeHtml(b.title||"");
+      const text  = escapeHtml(b.text||"");
+      const cta   = b.ctaText ? `<a href="${b.ctaUrl||"#"}" style="display:inline-block;background:${pal.btn};color:${pal.btnText};text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:900">${escapeHtml(b.ctaText)}</a>` : "";
+      return `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        ${img?`<tr><td>${img}</td></tr>`:""}
+        <tr><td style="padding:18px 20px">
+          ${title?`<h1 style="margin:0 0 6px;font-family:Inter,Arial,sans-serif;color:${pal.text}">${title}</h1>`:""}
+          ${text?`<p style="margin:0 0 12px;color:#334155;font-family:Inter,Arial,sans-serif">${text}</p>`:""}
+          ${cta}
+        </td></tr>
+      </table>`;
+    }
+    function textRow(b, pal){
+      const title = b.title ? `<h2 style="margin:0 0 6px;font-family:Inter,Arial,sans-serif;color:${pal.text}">${escapeHtml(b.title)}</h2>` : "";
+      const body  = b.body  ? `<p style="margin:0;color:#334155;line-height:1.55;font-family:Inter,Arial,sans-serif">${escapeHtml(b.body)}</p>`  : "";
+      return `<table role="presentation" width="100%"><tr><td style="padding:16px 20px">${title}${body}</td></tr></table>`;
+    }
+    function ctaRow(b, pal){
+      return `
+        <table role="presentation" width="100%"><tr><td style="padding:14px 20px">
+          <a href="${b.url||"#"}" style="display:inline-block;background:${pal.btn};color:${pal.btnText};text-decoration:none;padding:12px 18px;border-radius:8px;font-weight:900">${escapeHtml(b.text||"")}</a>
+        </td></tr></table>`;
+    }
+    function twoColRow(b, pal){
+      const img = b.img ? `<img src="${b.img}" alt="" width="300" style="display:block;width:100%;height:auto;border:0">` : "";
+      const left = b.reverse ? "text" : "img";
+      const right= b.reverse ? "img" : "text";
+      const text = `
+        <div style="padding:8px 0">
+          ${b.title?`<h3 style="margin:0 0 6px;font-family:Inter,Arial,sans-serif;color:${pal.text}">${escapeHtml(b.title)}</h3>`:""}
+          ${b.body?`<p style="margin:0;color:#334155;line-height:1.55;font-family:Inter,Arial,sans-serif">${escapeHtml(b.body)}</p>`:""}
+          ${b.ctaText?`<p style="margin:12px 0 0"><a href="${b.ctaUrl||"#"}" style="display:inline-block;background:${pal.btn};color:${pal.btnText};text-decoration:none;padding:10px 14px;border-radius:8px;font-weight:900">${escapeHtml(b.ctaText)}</a></p>`:""}
+        </div>`;
+      const col = (what)=> what==="img" ? img : text;
+      return `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="padding:12px 16px" width="50%">${col(left)}</td>
+          <td style="padding:12px 16px" width="50%">${col(right)}</td>
+        </tr>
+      </table>`;
+    }
+    async function productsRow(b, pal){
+      const ids = (b.productIds||"").split(",").map(s=>s.trim()).filter(Boolean);
+      if(!ids.length) return `<table role="presentation" width="100%"><tr><td style="padding:16px 20px;color:#64748b;font-family:Inter,Arial,sans-serif">Add product IDs to show product grid.</td></tr></table>`;
+      const products = [];
+      for(const id of ids){
+        try{
+          const d = await getDoc(doc(State.db,"products",id));
+          if(d.exists()){
+            const p = d.data();
+            products.push({ id, title:p.title||p.name||("Product "+id), price:p.price||0, image:p.image||p.photo||"", url:`https://yours-shop.com/product.html?id=${encodeURIComponent(id)}` });
+          }
+        }catch(_){}
+      }
+      const cols = Math.max(2, Math.min(4, b.columns||2));
+      const w = Math.floor(640/cols) - 16;
+      const cells = products.map(p=>`
+        <td style="padding:12px;vertical-align:top" width="${Math.floor(100/cols)}%">
+          ${p.image?`<img src="${p.image}" alt="" width="${w}" style="display:block;width:100%;height:auto;border:0;border-radius:8px">`:""}
+          <div style="margin:8px 0 4px;font-weight:900;font-family:Inter,Arial,sans-serif;color:${pal.text}">${escapeHtml(p.title)}</div>
+          <div style="color:#334155;font-family:Inter,Arial,sans-serif;margin-bottom:8px">XAF ${(p.price||0).toLocaleString()}</div>
+          <a href="${p.url}" style="display:inline-block;background:${pal.btn};color:${pal.btnText};text-decoration:none;padding:8px 12px;border-radius:8px;font-weight:800">View</a>
+        </td>`).join("");
+      return `
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+          <tr>${cells}</tr>
+        </table>`;
+    }
+    function couponRow(b, pal){
+      const badge = `
+        <div style="display:inline-block;background:${pal.accent};color:#fff;padding:8px 12px;border-radius:999px;font-weight:900;letter-spacing:.5px">
+          ${escapeHtml(b.code||"COUPON")}
+        </div>`;
+      const sub = [b.expires?`Expires: ${escapeHtml(b.expires)}`:"", b.min?`Min spend: ${escapeHtml(b.min)}`:""].filter(Boolean).join(" • ");
+      return `
+      <table role="presentation" width="100%"><tr><td style="padding:18px 20px;border:2px dashed ${pal.accent};border-radius:12px">
+        <div style="font-family:Inter,Arial,sans-serif;color:${pal.text};font-weight:900;margin-bottom:8px">${State.uiLang==="fr"?"Votre coupon":"Your coupon"}</div>
+        ${badge}
+        ${sub?`<div style="color:#334155;margin-top:6px;font-family:Inter,Arial,sans-serif">${escapeHtml(sub)}</div>`:""}
+      </td></tr></table>`;
+    }
+    function testimonialRow(b, pal){
+      return `
+      <table role="presentation" width="100%"><tr><td style="padding:16px 20px">
+        <blockquote style="margin:0;border-left:4px solid ${pal.accent};padding-left:12px;color:#334155;font-style:italic;font-family:Inter,Arial,sans-serif">
+          ${escapeHtml(b.quote||"")}
+        </blockquote>
+        ${b.author?`<div style="margin-top:8px;color:${pal.text};font-weight:900;font-family:Inter,Arial,sans-serif">— ${escapeHtml(b.author)}</div>`:""}
+      </td></tr></table>`;
+    }
+    function footerRow(f, pal, unsub){
+      return `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr><td style="padding:16px 20px;border-top:1px solid #e5e7eb">
+          <p style="margin:0 0 6px;color:#64748b;font-size:12px;font-family:Inter,Arial,sans-serif">
+            <a href="${unsub}" style="color:${pal.accent}">${State.uiLang==="fr"?"Se désabonner":"Unsubscribe"}</a> • ${escapeHtml(f.address||"")}
+          </p>
+          <p style="margin:0;color:#94a3b8;font-size:11px;font-family:Inter,Arial,sans-serif">© ${new Date().getFullYear()} Yours Shop</p>
+        </td></tr>
+      </table>`;
+    }
+
+    function buildPlainText(){
+      const parts = [];
+      if(State.promotion.subject) parts.push(`# ${State.promotion.subject}`);
+      if(State.promotion.preheader) parts.push(`${State.promotion.preheader}\n`);
+      for(const b of (State.promotion.blocks||[])){
+        if(b.type==="hero"){ parts.push(`${b.title||""}\n${b.text||""}\n${b.ctaText?`${b.ctaText}: ${b.ctaUrl||"#"}`:""}`); }
+        if(b.type==="text"){ parts.push(`${b.title||""}\n${b.body||""}`); }
+        if(b.type==="cta"){  parts.push(`${b.text||"Button"}: ${b.url||"#"}`); }
+        if(b.type==="twocol"){parts.push(`${b.title||""}\n${b.body||""}\n${b.ctaText?`${b.ctaText}: ${b.ctaUrl||"#"}`:""}`); }
+        if(b.type==="products"){ parts.push(`[Products block: ${b.productIds||""}]`); }
+        if(b.type==="coupon"){ parts.push(`COUPON: ${b.code||""} ${b.expires?`(Expires ${b.expires})`:""} ${b.min?`Min ${b.min}`:""}`); }
+        if(b.type==="testimonial"){ parts.push(`“${b.quote||""}” — ${b.author||""}`); }
+      }
+      parts.push("\nUnsubscribe: {{unsubscribe_url}}");
+      return parts.filter(Boolean).join("\n\n");
+    }
+
+    /* ================== Audience estimation (robust Firestore load) ================== */
+    function normalizeStr(s){
+      return (s||"").toString().trim().toLowerCase().replace(/\s+/g," ").replace(/-/g," ");
+    }
+    function regionSynonyms(enName){
+      const r = REGIONS.find(x=>x.en===enName);
+      if(!r) return [enName];
+      const v = new Set([
+        r.en, r.fr,
+        r.en.replace(/-/g," "), r.fr.replace(/-/g," "),
+        r.en.toUpperCase(), r.fr.toUpperCase(),
+        r.en.toLowerCase(), r.fr.toLowerCase()
+      ]);
+      return Array.from(v).slice(0,10);
+    }
+    function regionMatches(value, enTarget){
+      const syn = regionSynonyms(enTarget).map(normalizeStr);
+      return syn.includes(normalizeStr(value));
+    }
+
+    async function estimateAudience(){
+      const chip = $("#recipientCount"); chip.classList.add("skeleton");
+      try{
+        const mode = $("#audMode").value;
+        const filters = {
+          optIn: $("#filterOptIn").checked,
+          verified: $("#filterVerified").checked,
+          recent: $("#filterRecent").checked,
+          high: $("#filterHighValue").checked
+        };
+        const selectedEN = Array.from($("#regionsSelect").selectedOptions).map(o=>o.value);
+
+        // Fetch candidates from Firestore (users first, then customers as fallback)
+        async function fetchFromCollection(coll){
+          const seen = new Set();
+          const rows = [];
+
+          // Helper to run a small query and push docs
+          async function run(q){
+            const snap = await getDocs(q);
+            snap.forEach(d => {
+              if(!seen.has(d.id)){ seen.add(d.id); rows.push({id:d.id, data:d.data()||{}}); }
+            });
+          }
+
+          // Build queries:
+          if(mode==="regions" && selectedEN.length){
+            // Query per region synonym (==, avoids composite 'in' index issues)
+            for(const enName of selectedEN){
+              const syns = regionSynonyms(enName);
+              for(const s of syns){
+                try{
+                  await run(query(collection(State.db, coll), where("region","==", s)));
+                }catch(_){
+                  // fallback: fetch entire coll (worst case small dataset)
+                  // skipped here to avoid heavy pulls; we'll rely on other synonyms
+                }
+              }
+            }
+          }else{
+            // All/custom: try role=='customer' first, else fall back to all docs
+            try{
+              await run(query(collection(State.db, coll), where("role","==","customer")));
+            }catch(_){
+              // If role composite/index missing or field not used, grab a broad sample
+              await run(query(collection(State.db, coll)));
+            }
+          }
+
+          return rows;
+        }
+
+        // Primary source
+        let rows = await fetchFromCollection("users");
+        // Fallback to "customers" collection if nothing found
+        if(rows.length === 0){
+          try{ rows = await fetchFromCollection("customers"); }catch(_){}
+        }
+
+        // Client-side filtering
+        const ids = new Set();
+        function isRecent(u){
+          const ts = (u.lastOrderAt && u.lastOrderAt.seconds) ? new Date(u.lastOrderAt.seconds*1000) : null;
+          if(!ts) return false;
+          const days = (Date.now()-ts.getTime())/86400000;
+          return days<=90;
+        }
+        function isHighValue(u){
+          const spent = (u.stats && u.stats.totalSpent) ? +u.stats.totalSpent : 0;
+          return spent >= 200000; // XAF threshold
+        }
+
+        for(const {id, data:u} of rows){
+          // Region constraint (if in regions mode)
+          if(mode==="regions" && selectedEN.length){
+            let okRegion = false;
+            for(const enName of selectedEN){
+              if(regionMatches(u.region, enName)){ okRegion = true; break; }
+            }
+            if(!okRegion) continue;
+          }
+
+          // Opt-in: treat only explicit false as excluded to avoid "0" when field is missing
+          if(filters.optIn && u.marketingOptIn === false) continue;
+
+          // Verified: require explicit true when enabled
+          if(filters.verified && u.emailVerified !== true) continue;
+
+          if(filters.recent && !isRecent(u)) continue;
+          if(filters.high && !isHighValue(u)) continue;
+
+          ids.add(id);
+        }
+
+        $("#recipientCount").textContent = ids.size.toLocaleString();
+      }catch(e){
+        console.warn(e);
+        $("#recipientCount").textContent = "—";
+      }finally{
+        chip.classList.remove("skeleton");
+      }
+    }
+
+    // Refresh estimate when controls change
+    $("#refreshAudienceBtn").addEventListener("click", estimateAudience);
+    $("#regionsSelect").addEventListener("change", estimateAudience);
+    $("#filterOptIn").addEventListener("change", estimateAudience);
+    $("#filterVerified").addEventListener("change", estimateAudience);
+    $("#filterRecent").addEventListener("change", estimateAudience);
+    $("#filterHighValue").addEventListener("change", estimateAudience);
+
+    /* ================== Save / Template / Send ================== */
+    function collectState(){
+      const selectedRegions = Array.from($("#regionsSelect").selectedOptions).map(o=>o.value);
+      return {
+        ...State.promotion,
+        name: $("#promoName").value || ("Promotion "+new Date().toISOString().slice(0,10)),
+        fromName: $("#fromName").value || "Yours Shop",
+        fromEmail: $("#fromEmail").value || "",
+        subject: $("#subject").value || "",
+        preheader: $("#preheader").value || "",
+        theme: $("#themeSelect").value,
+        contentLang: $("#contentLang").value,
+        companyAddress: $("#companyAddress").value || "",
+        audience:{
+          mode: $("#audMode").value,
+          regions: selectedRegions,
+          filters:{
+            optIn: $("#filterOptIn").checked,
+            verified: $("#filterVerified").checked,
+            recent: $("#filterRecent").checked,
+            high: $("#filterHighValue").checked
+          }
+        },
+        blocks: State.promotion.blocks,
+        scheduleAt: $("#scheduleAt").value ? new Date($("#scheduleAt").value) : null,
+        createdBy: (State.user && State.user.uid) || null,
+        createdAt: serverTimestamp(),
+        status: "draft"
+      };
+    }
+
+    async function saveDraft(){
+      const payload = collectState();
+      const ref = doc(collection(State.db,"promotions"));
+      await setDoc(ref, payload);
+      $("#statusChip").textContent = t("status.draft");
+      alert(State.uiLang==="fr" ? "Brouillon enregistré." : "Draft saved.");
+      return ref.id;
+    }
+    $("#saveDraftBtn").addEventListener("click", ()=>{ saveDraft().catch(e=>{ alert("Failed to save draft."); console.error(e); }); });
+
+    async function saveTemplate(){
+      const payload = collectState();
+      const ref = doc(collection(State.db,"promotionTemplates"));
+      await setDoc(ref, {
+        name: payload.name, theme: payload.theme, blocks: payload.blocks, companyAddress: payload.companyAddress,
+        createdBy: payload.createdBy, createdAt: serverTimestamp()
+      });
+      alert(State.uiLang==="fr" ? "Modèle enregistré." : "Template saved.");
+      return ref.id;
+    }
+    $("#saveTemplateBtn").addEventListener("click", ()=>{ saveTemplate().catch(e=>{ alert("Failed to save template."); console.error(e); }); });
+
+    async function sendTest(toEmail){
+      const html = await buildEmailHTML(false);
+      const payload = collectState();
+      const ref = doc(collection(State.db,"emailQueue")); // Cloud Function/Extension should watch this
+      await setDoc(ref, {
+        type:"promotion-test",
+        to: toEmail,
+        subject: payload.subject,
+        html,
+        preheader: payload.preheader || "",
+        fromName: payload.fromName,
+        fromEmail: payload.fromEmail,
+        promotionName: payload.name,
+        createdAt: serverTimestamp(),
+        createdBy: (State.user && State.user.uid)||null
+      });
+      alert(State.uiLang==="fr" ? "E-mail de test envoyé (queue)." : "Test email queued.");
+    }
+    $("#quickTestBtn").addEventListener("click", ()=>{
+      const em = $("#testEmail").value.trim();
+      if(!em){ alert(State.uiLang==="fr" ? "Entrez un e-mail de test." : "Enter a test email."); return; }
+      sendTest(em).catch(e=>{ alert("Failed to queue test email."); console.error(e); });
+    });
+    $("#sendTestBtn").addEventListener("click", ()=>{
+      const em = prompt(State.uiLang==="fr" ? "E-mail de test :" : "Test email:");
+      if(em) sendTest(em.trim()).catch(e=>{ alert("Failed to queue test email."); console.error(e); });
+    });
+
+    function openDatePicker(){
+      const el = $("#scheduleAt");
+      if(el && typeof el.showPicker === "function"){ el.showPicker(); }
+      else { el?.focus(); el?.click(); }
+    }
+
+    async function scheduleSend(status){
+      const payload = collectState();
+      payload.status = status; // "scheduled" or "queued"
+      payload.estimatedRecipients = $("#recipientCount").textContent || "";
+      payload.html = await buildEmailHTML(false); // store a copy for reference
+      const ref = doc(collection(State.db,"promotions"));
+      await setDoc(ref, payload);
+
+      if(status === "queued"){
+        const job = doc(collection(State.db,"emailQueue"));
+        await setDoc(job, {
+          type:"promotion-send",
+          promotionId: ref.id,
+          subject: payload.subject,
+          html: payload.html,
+          fromName: payload.fromName,
+          fromEmail: payload.fromEmail,
+          audience: payload.audience,
+          createdAt: serverTimestamp(),
+          createdBy: payload.createdBy
+        });
+      }
+
+      $("#statusChip").textContent = (status==="scheduled" ? (State.uiLang==="fr"?"Planifié":"Scheduled") : (State.uiLang==="fr"?"En file d’attente":"Queued"));
+      alert(State.uiLang==="fr" ? "Campagne enregistrée. L’envoi sera géré par le backend." : "Campaign saved. Backend will process the send.");
+      return ref.id;
+    }
+
+    $("#scheduleBtn").addEventListener("click", async ()=>{
+      try{
+        if(!$("#scheduleAt").value){ openDatePicker(); return; }
+        await scheduleSend("scheduled");
+      }catch(e){ alert("Failed to schedule."); console.error(e); }
+    });
+
+    $("#sendNowBtn").addEventListener("click", async ()=>{
+      try{
+        await scheduleSend("queued");
+      }catch(e){ alert("Failed to queue send."); console.error(e); }
+    });
+
+    /* ================== Firebase Init ================== */
+    async function init(){
+      applyLang();
+      applyTheme();
+
+      // Firebase
+      State.app = initializeApp(firebaseConfig);
+      State.auth = getAuth(State.app);
+      State.db   = getFirestore(State.app);
+      try{
+        await setPersistence(State.auth, browserLocalPersistence);
+      }catch(e){
+        console.warn("Persistence error", e);
+      }
+
+      onAuthStateChanged(State.auth, async (u)=>{
+        if(!u){ /* optionally redirect to login */ return; }
+        State.user = u;
+        if(!$("#fromEmail").value) $("#fromEmail").value = (u.email || "promotions@yours-shop.com");
+        if(!$("#fromName").value && u.displayName) $("#fromName").value = u.displayName;
+      });
+
+      renderBlocks();
+      await buildPreview();
+      estimateAudience();
+    }
+
+    document.addEventListener("DOMContentLoaded", ()=> {
+      $("#year").textContent = new Date().getFullYear();
+    });
+
+    init();
+  </script>
+</body>
+</html>

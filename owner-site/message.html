@@ -1,0 +1,882 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Owner Portal — Messages</title>
+
+  <!-- Colors for address bar -->
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0b1220" media="(prefers-color-scheme: dark)">
+
+  <link rel="icon" href="assets/favicon.ico" />
+
+  <!-- Cloudinary widget -->
+  <script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
+
+  <style>
+    :root{
+      --brand:#0f3b66; --brand-2:#154f8f; --accent:#ff9900;
+      --bg:#f6f8fb; --card:#ffffff; --text:#0b1220; --muted:#6b7280; --line:#e5e7eb;
+      --danger:#d90429; --ok:#10b981; --chip:#eef2ff; --chip2:#fff7e6;
+    }
+    html[data-theme="dark"]{
+      --bg:#0b1220; --card:#111827; --text:#f7f8fd; --muted:#9aa3b2; --line:#1f2937;
+      --chip:#1f2937; --chip2:#1f2937;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.45}
+
+    /* Layout: header + 3-pane app */
+    .app{min-height:100vh;display:grid;grid-template-rows:auto 1fr}
+    header{background:var(--card);border-bottom:1px solid var(--line);padding:12px 16px;display:flex;align-items:center;gap:10px;justify-content:space-between}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{width:36px;height:36px;border-radius:12px;background:linear-gradient(135deg,var(--brand),var(--brand-2));box-shadow:0 8px 22px rgba(15,59,102,.25)}
+    .brand h1{margin:0;font-size:1.05rem;color:var(--brand);letter-spacing:.3px}
+    .actions{display:flex;gap:8px;align-items:center}
+    .icon-btn,.btn{border:1px solid var(--line);background:transparent;color:var(--text);height:38px;padding:0 12px;border-radius:10px;cursor:pointer;font-weight:700}
+    .btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+    .chip{background:var(--chip);border:1px solid var(--line);padding:7px 10px;border-radius:999px;font-size:.9rem;color:var(--brand);font-weight:800}
+
+    .shell{display:grid;grid-template-columns:300px 1fr 360px;gap:12px;padding:12px}
+    @media (max-width: 1100px){ .shell{grid-template-columns:280px 1fr} .right{display:none}}
+    @media (max-width: 720px){ .shell{grid-template-columns:1fr} .left{order:2} .center{order:1} .right{display:none}}
+
+    /* LEFT: conversations / filters */
+    .left{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;display:grid;grid-template-rows:auto auto 1fr}
+    .filters{display:grid;gap:8px}
+    .filters .row{display:flex;gap:8px}
+    .filters input[type="search"], .filters select{
+      width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:12px;background:transparent;color:var(--text)
+    }
+    .conv-list{margin-top:10px;overflow:auto;display:grid;gap:8px}
+    .item{display:grid;grid-template-columns:42px 1fr auto;gap:10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px;cursor:pointer}
+    .item.active{outline:3px solid color-mix(in srgb, var(--brand) 22%, transparent)}
+    .avatar{position:relative;width:42px;height:42px;border-radius:12px;overflow:hidden;display:grid;place-items:center;background:linear-gradient(135deg,#c7d2fe,#bfdbfe);color:#111827;font-weight:900}
+    .avatar img{width:100%;height:100%;object-fit:cover;display:block}
+    .dot{position:absolute;bottom:2px;right:2px;width:10px;height:10px;border-radius:50%;border:2px solid var(--card);background:#9aa3b2}
+    .dot.online{background:#10b981}
+    .meta small{display:block;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .badge{display:inline-grid;place-items:center;min-width:22px;height:22px;padding:0 6px;background:var(--chip2);border:1px solid var(--line);border-radius:999px;font-size:.75rem}
+
+    /* CENTER: chat */
+    .center{background:var(--card);border:1px solid var(--line);border-radius:14px;display:grid;grid-template-rows:auto 1fr auto;min-height:65vh}
+    .chat-header{padding:10px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+    .chat-header .title{display:grid}
+    .chat-header .title strong{line-height:1}
+    .chat-header .title small{color:var(--muted)}
+    .log{padding:10px 12px;overflow:auto;display:flex;flex-direction:column;gap:10px}
+    .bubble{max-width:75%;border:1px solid var(--line);padding:8px 10px;border-radius:12px;background:#fff}
+    [data-theme="dark"] .bubble{background:#0f172a}
+    .bubble.mine{margin-left:auto;border-top-right-radius:6px;background:color-mix(in srgb, var(--brand) 12%, #fff)}
+    .bubble .meta{margin-top:6px;color:var(--muted);font-size:.8rem}
+    .attachments{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+    .att{border:1px dashed var(--line);border-radius:8px;padding:6px 8px;font-size:.85rem}
+    .composer{padding:10px 12px;border-top:1px solid var(--line);display:grid;grid-template-columns:auto 1fr auto auto;gap:8px}
+    .composer input[type="text"]{padding:10px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text)}
+    .hint{color:var(--muted);font-size:.85rem}
+
+    /* RIGHT: promotions */
+    .right{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;display:grid;grid-template-rows:auto auto 1fr}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px}
+    .card h3{margin:0 0 8px 0}
+    .promo form{display:grid;gap:8px}
+    .promo input,.promo textarea,.promo select{padding:10px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--text)}
+    .promo .row{display:flex;gap:8px}
+
+    /* Skeletons */
+    .skeleton{animation:pulse 1.4s ease-in-out infinite;background:linear-gradient(90deg, rgba(0,0,0,.06) 25%, rgba(0,0,0,.12) 37%, rgba(0,0,0,.06) 63%);background-size:400% 100%}
+    @keyframes pulse{0%{background-position:100% 0}100%{background-position:-100% 0}}
+
+    .alert{display:none;margin:8px 0;padding:10px 12px;border-radius:10px}
+    .alert.ok{display:block;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.45);color:#0a8f5d}
+    .alert.err{display:block;background:rgba(217,4,41,.1);border:1px solid rgba(217,4,41,.35);color:#d90429}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <h1>Messages</h1>
+      </div>
+      <div class="actions">
+        <button id="langToggle" class="icon-btn" title="Language">EN</button>
+        <button id="themeToggle" class="icon-btn" title="Theme">🌓</button>
+        <a class="icon-btn" href="promotion.html">Promotion</a>
+        <a class="icon-btn" href="index.html">Back to Dashboard</a>
+      </div>
+    </header>
+
+    <!-- 3-pane shell -->
+    <section class="shell">
+      <!-- LEFT: conversations -->
+      <aside class="left">
+        <div class="filters">
+          <div class="row">
+            <input id="searchConv" type="search" placeholder="Search people or groups" autocomplete="off">
+          </div>
+          <div class="row">
+            <select id="roleFilter">
+              <option value="all">All roles</option>
+              <option value="owner">Owner</option>
+              <option value="manager">Manager</option>
+              <option value="worker">Worker</option>
+              <option value="seller">Seller</option>
+              <option value="customer">Customer</option>
+            </select>
+            <select id="regionFilter">
+              <option value="all">All regions</option>
+              <option>Adamawa</option>
+              <option>Centre</option>
+              <option>East</option>
+              <option>Far North</option>
+              <option>Littoral</option>
+              <option>North</option>
+              <option>North-West</option>
+              <option>West</option>
+              <option>South</option>
+              <option>South-West</option>
+            </select>
+          </div>
+          <div class="row">
+            <button id="newDM" class="btn">New DM</button>
+            <button id="ensureGroups" class="btn">Ensure Groups</button>
+          </div>
+        </div>
+
+        <div id="convList" class="conv-list" role="list" aria-label="Conversations">
+          <!-- populated by JS -->
+          <div class="item skeleton" aria-hidden="true" style="height:54px"></div>
+          <div class="item skeleton" aria-hidden="true" style="height:54px"></div>
+          <div class="item skeleton" aria-hidden="true" style="height:54px"></div>
+        </div>
+      </aside>
+
+      <!-- CENTER: chat -->
+      <section class="center" aria-live="polite">
+        <div class="chat-header">
+          <div class="avatar" id="chatAvatar" aria-hidden="true"><span>—</span><span class="dot" id="chatDot"></span></div>
+          <div class="title">
+            <strong id="chatTitle">Select a conversation</strong>
+            <small id="chatSub">Online status will appear here</small>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:8px">
+            <button id="cleanupBtn" class="btn">Purge expired</button>
+          </div>
+        </div>
+
+        <div id="log" class="log" aria-label="Message log"></div>
+
+        <div class="composer">
+          <button id="attachBtn" class="icon-btn" title="Attach image/file">📎</button>
+          <input id="msgInput" type="text" placeholder="Write a message…" autocomplete="off" />
+          <label class="hint"><input id="ephemeral" type="checkbox" /> Auto-delete in 40 days</label>
+          <button id="sendBtn" class="btn-primary">Send</button>
+        </div>
+      </section>
+
+      <!-- RIGHT: promotions (owner broadcast) -->
+      <aside class="right">
+        <div class="card">
+          <h3>Broadcast & Promotions</h3>
+          <div id="promoAlert" class="alert"></div>
+          <div class="promo">
+            <form id="promoForm">
+              <input id="promoSubject" type="text" placeholder="Subject (e.g., Mega Sale this weekend!)" required />
+              <textarea id="promoHtml" rows="8" placeholder="HTML body (you can paste HTML or write plain text)" required></textarea>
+              <div class="row">
+                <select id="promoAudience">
+                  <option value="customers">All Customers</option>
+                  <option value="sellers">All Sellers</option>
+                  <option value="managers">All Managers</option>
+                  <option value="workers">All Workers</option>
+                  <option value="all">Everyone (all users)</option>
+                </select>
+                <button class="btn" id="previewEmail" type="button">Preview</button>
+              </div>
+              <button class="btn-primary" id="sendPromo" type="submit">Send Email Broadcast</button>
+              <small class="hint">This adds a document to <code>promotions/outbox</code>. Your Cloud Function or email service will deliver it.</small>
+            </form>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h3>Tips</h3>
+          <ul style="margin:0 0 0 18px;padding:0">
+            <li>Images & docs allowed (jpg/png/webp/pdf/doc/xls).</li>
+            <li>All messages get <strong>expireAt = now + 40 days</strong>.</li>
+            <li>Owner can see every region & group.</li>
+          </ul>
+        </div>
+      </aside>
+    </section>
+  </div>
+
+  <!-- Firebase v10 modules -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import {
+      getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import {
+      getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc,
+      serverTimestamp, query, where, orderBy, limit, onSnapshot, writeBatch, Timestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    import {
+      getStorage, ref as sRef, deleteObject
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
+    import {
+      getDatabase, ref as rRef, onValue
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+
+    /* ====== Config (project you already use) ====== */
+    const firebaseConfig = {
+      apiKey: "AIzaSyCz446b_SZF8L1HykjAeHrc9LK9GVWX4Q4",
+      authDomain: "your-shop-3bdd1.firebaseapp.com",
+      projectId: "your-shop-3bdd1",
+      storageBucket: "your-shop-3bdd1.appspot.com",
+      messagingSenderId: "440558238881",
+      appId: "1:440558238881:web:b1594dc8a4bfd9089dc4e0"
+    };
+
+    const REGIONS = ["Adamawa","Centre","East","Far North","Littoral","North","North-West","West","South","South-West"];
+    const STALE_MS = 2 * 60 * 1000; // 2 minutes for online
+    const TTL_DAYS = 40;
+
+    /* ====== Boot ====== */
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db   = getFirestore(app);
+    const rtdb = getDatabase(app);
+    const storage = getStorage(app);
+    await setPersistence(auth, browserLocalPersistence);
+
+    // Cloudinary config — using your provided values
+    const CLOUD = "divjjbwit";
+    const UP_PRESET = "unsigned_preset";
+    const CL_FOLDER = (window.__CLOUDINARY__?.folder) || "owner-messages";
+
+    /* ====== State ====== */
+    const State = {
+      me: null,
+      isOwner: false,
+      users: new Map(),        // uid -> {uid, name, role, region, photoURL}
+      presence: new Map(),     // uid -> { online:boolean, last:number }
+      threads: [],             // convo list items
+      current: null,           // {type:"dm"|"group", id, title, avatar, members:[uid]}
+      unsubMessages: null
+    };
+
+    /* ====== UI ====== */
+    const $ = s => document.querySelector(s);
+    const $$ = s => document.querySelectorAll(s);
+    const convList = $("#convList");
+    const log = $("#log");
+    const chatTitle = $("#chatTitle");
+    const chatSub = $("#chatSub");
+    const chatAvatar = $("#chatAvatar");
+    const chatDot = $("#chatDot");
+    const msgInput = $("#msgInput");
+    const sendBtn = $("#sendBtn");
+    const attachBtn = $("#attachBtn");
+    const ephemeralChk = $("#ephemeral");
+    const cleanupBtn = $("#cleanupBtn");
+    const promoForm = $("#promoForm");
+    const promoAlert = $("#promoAlert");
+
+    /* ====== Helpers ====== */
+    const nowMs = ()=> Date.now();
+    const msFromTs = (v)=>{
+      try{
+        if (!v) return 0;
+        if (v.toDate) return v.toDate().getTime();
+        if (typeof v === "number") return v;
+        if (v.seconds) return v.seconds*1000;
+      }catch(_){}
+      return 0;
+    };
+    const plusDaysTs = (days)=> Timestamp.fromMillis(Date.now() + days*24*60*60*1000);
+    const fmtAgo = (ms)=>{
+      if (!ms) return "—";
+      const diff = Math.max(0, Date.now()-ms);
+      const m = Math.floor(diff/60000);
+      if (m < 1) return "just now";
+      if (m < 60) return `${m}m ago`;
+      const h = Math.floor(m/60);
+      if (h < 24) return `${h}h ago`;
+      const d = Math.floor(h/24);
+      return `${d}d ago`;
+    };
+    const isOnline = (uid)=>{
+      const p = State.presence.get(uid);
+      return !!(p && p.online && (Date.now() - (p.last||0)) <= STALE_MS);
+    };
+    const initials = (name="")=>{
+      const parts = String(name||"").trim().split(/\s+/).slice(0,2);
+      return parts.map(p=>p[0]?.toUpperCase()||"").join("");
+    };
+    function setDot(el, online){ if (!el) return; el.classList.toggle("online", !!online); }
+
+    function userDisplay(u){
+      const name = u?.name || u?.displayName || "—";
+      const role = u?.role || "—";
+      const region = u?.region ? ` • ${u.region}` : "";
+      return `${name} • ${role}${region}`;
+    }
+
+    /* ====== Theme / Lang ====== (default EN) */
+    const setTheme = (mode)=>{
+      document.documentElement.setAttribute("data-theme", mode);
+      $$('meta[name="theme-color"]').forEach(m=>{
+        m.setAttribute("content", mode==="dark" ? "#0b1220" : "#ffffff");
+      });
+      try{ localStorage.setItem("theme", mode); }catch{}
+    };
+    $("#themeToggle").addEventListener("click", ()=>{
+      const cur = document.documentElement.getAttribute("data-theme")==="dark"?"dark":"light";
+      setTheme(cur==="dark"?"light":"dark");
+    });
+    setTheme(localStorage.getItem("theme") || "light");
+
+    $("#langToggle").addEventListener("click", ()=>{
+      const cur = $("#langToggle").textContent.trim().toLowerCase();
+      $("#langToggle").textContent = (cur==="en") ? "FR" : "EN";
+      // (UI text is English-first; for FR, you can swap strings here if needed)
+    });
+
+    /* ====== Presence listeners (RTDB + Firestore mirror) ====== */
+    function startPresenceWatch(){
+      // Firestore mirror: /presence/{uid} => { online:boolean, lastSeen:Timestamp }
+      const presCol = collection(db, "presence");
+      onSnapshot(presCol, (qs)=>{
+        const now = Date.now();
+        qs.forEach(docSnap=>{
+          const d = docSnap.data() || {};
+          let last = 0;
+          try{
+            if (d.lastSeen?.toDate) last = d.lastSeen.toDate().getTime();
+            else if (typeof d.lastSeen==="number") last = d.lastSeen;
+            else if (d.lastSeen?.seconds) last = d.lastSeen.seconds*1000;
+          }catch(_){}
+          State.presence.set(docSnap.id, { online: !!d.online, last });
+        });
+        renderCurrentPresence();
+        renderConvList();
+      });
+
+      // RTDB /status as a second signal
+      const statusRef = rRef(rtdb, "status");
+      onValue(statusRef, (snap)=>{
+        const data = snap.val() || {};
+        Object.keys(data).forEach(uid=>{
+          const s = data[uid] || {};
+          const online = (s.state === "online") || (s.online === true) || (s.state === true);
+          const last = typeof s.last_changed === "number" ? s.last_changed
+            : (s.last_changed?.seconds ? s.last_changed.seconds*1000 : Date.now());
+          const prev = State.presence.get(uid) || {};
+          // merge (prefer a true online if either says so)
+          State.presence.set(uid, { online: !!(online || prev.online), last: Math.max(prev.last||0, last||0) });
+        });
+        renderCurrentPresence();
+        renderConvList();
+      });
+    }
+
+    function renderCurrentPresence(){
+      if (!State.current) return;
+      const members = State.current.members || [];
+      // For 1:1 we show that user's presence; for groups, online count
+      if (State.current.type === "dm" && members.length === 2){
+        const other = members.find(u => u !== State.me.uid);
+        const p = State.presence.get(other);
+        setDot(chatDot, isOnline(other));
+        const last = p?.last ? ` • last seen ${fmtAgo(p.last)}` : "";
+        chatSub.textContent = isOnline(other) ? "Online" : `Offline${last}`;
+      } else {
+        // group
+        const onCount = members.filter(u => isOnline(u)).length;
+        chatSub.textContent = `${onCount}/${members.length} online`;
+        setDot(chatDot, onCount>0);
+      }
+    }
+
+    /* ====== Load users and role data ====== */
+    async function loadUsers(){
+      const usersSnap = await getDocs(collection(db, "users"));
+      usersSnap.forEach(d=>{
+        const data = d.data() || {};
+        State.users.set(d.id, {
+          uid: d.id,
+          name: data.name || data.displayName || data.email || d.id,
+          role: data.role || "",
+          region: data.region || "",
+          photoURL: data.photoURL || data.avatar || ""
+        });
+      });
+    }
+
+    /* ====== Conversations (DM + Groups) ====== */
+    // DM thread id: sorted UID pair "a_b"
+    const dmId = (a,b)=> [a,b].sort().join("_");
+
+    async function buildCoreGroupsForOwner(){
+      // Groups:
+      // 1) Owner + all managers  => slug: owner_managers_global
+      // 2) For each region: managers + workers => region_staff_{region}
+      // 3) For each region: managers + sellers => region_sellers_{region}
+      const ownerUid = State.me.uid;
+
+      // Partition users
+      const managers = [...State.users.values()].filter(u=>u.role==="manager");
+      const workers  = [...State.users.values()].filter(u=>u.role==="worker");
+      const sellers  = [...State.users.values()].filter(u=>u.role==="seller");
+
+      const groupsSpec = [];
+
+      // (1) Owner-Managers
+      groupsSpec.push({
+        id: "owner_managers_global",
+        name: "Owner & Managers",
+        type: "owner_managers",
+        region: null,
+        members: [ownerUid, ...managers.map(m=>m.uid)]
+      });
+
+      // (2) Region staff
+      for (const region of REGIONS){
+        const mems = [
+          ...managers.filter(m=>m.region===region).map(m=>m.uid),
+          ...workers.filter(w=>w.region===region).map(w=>w.uid),
+          ownerUid
+        ];
+        if (mems.length > 1){
+          groupsSpec.push({
+            id: `region_staff_${region.replace(/\s+/g,'_').toLowerCase()}`,
+            name: `Region Staff — ${region}`,
+            type: "region_staff",
+            region,
+            members: Array.from(new Set(mems))
+          });
+        }
+      }
+
+      // (3) Region sellers
+      for (const region of REGIONS){
+        const mems = [
+          ...managers.filter(m=>m.region===region).map(m=>m.uid),
+          ...sellers.filter(s=>s.region===region).map(s=>s.uid),
+          ownerUid
+        ];
+        if (mems.length > 1){
+          groupsSpec.push({
+            id: `region_sellers_${region.replace(/\s+/g,'_').toLowerCase()}`,
+            name: `Region Sellers — ${region}`,
+            type: "region_sellers",
+            region,
+            members: Array.from(new Set(mems))
+          });
+        }
+      }
+
+      // Upsert groups
+      const batch = writeBatch(db);
+      for (const g of groupsSpec){
+        const ref = doc(db, "groups", g.id);
+        const snap = await getDoc(ref);
+        if (!snap.exists()){
+          batch.set(ref, {
+            name: g.name, type: g.type, region: g.region || null,
+            members: g.members, createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+          });
+        } else {
+          const prev = snap.data() || {};
+          const merged = Array.from(new Set([...(prev.members||[]), ...g.members]));
+          batch.update(ref, { name:g.name, type:g.type, region:g.region||null, members: merged, updatedAt: serverTimestamp() });
+        }
+      }
+      await batch.commit();
+    }
+
+    async function fetchConversations(){
+      // Build thread list: all groups the owner is in + handy DMs for managers/workers/sellers/customers (lazy)
+      const me = State.me.uid;
+
+      const groups = await getDocs(collection(db, "groups"));
+      const myGroups = [];
+      groups.forEach(d=>{
+        const G = d.data() || {};
+        const members = G.members || [];
+        if (members.includes(me)){
+          myGroups.push({
+            type: "group",
+            id: d.id,
+            title: G.name || d.id,
+            avatar: "",
+            members
+          });
+        }
+      });
+
+      // Prepare a few DM suggestions: managers and regional staff
+      const dmCandidates = [...State.users.values()].filter(u => u.uid !== me);
+      const dms = dmCandidates.map(u => ({
+        type: "dm",
+        id: dmId(me, u.uid),
+        title: `${u.name} • ${u.role}${u.region?(" • "+u.region):""}`,
+        avatar: u.photoURL || "",
+        members: [me, u.uid]
+      }));
+
+      // Merge & sort: groups first, then DMs by role weight
+      const roleWeight = r => ({owner:1,manager:2,worker:3,seller:4,customer:5}[r] || 9);
+      const sorted = [
+        ...myGroups.sort((a,b)=> a.title.localeCompare(b.title)),
+        ...dms.sort((a,b)=>{
+          const ua = State.users.get(a.members.find(u=>u!==me)) || {};
+          const ub = State.users.get(b.members.find(u=>u!==me)) || {};
+          if (roleWeight(ua.role) !== roleWeight(ub.role)) return roleWeight(ua.role)-roleWeight(ub.role);
+          return (ua.name||"").localeCompare(ub.name||"");
+        })
+      ];
+      State.threads = sorted;
+      renderConvList();
+    }
+
+    function renderConvList(){
+      const q = ($("#searchConv").value || "").toLowerCase();
+      const roleF = $("#roleFilter").value;
+      const regionF = $("#regionFilter").value;
+
+      convList.innerHTML = "";
+      const frag = document.createDocumentFragment();
+      for (const it of State.threads){
+        // Filter: only show what matches search + role + region (for DMs; groups always visible to owner)
+        if (it.type === "dm"){
+          const other = it.members.find(u => u !== State.me.uid);
+          const u = State.users.get(other) || {};
+          if (roleF !== "all" && u.role !== roleF) continue;
+          if (regionF !== "all" && (u.region||"").toLowerCase() !== regionF.toLowerCase()) continue;
+          const text = (it.title||"").toLowerCase();
+          if (q && !text.includes(q)) continue;
+        } else {
+          if (q && !(it.title||"").toLowerCase().includes(q)) continue;
+        }
+
+        const row = document.createElement("div");
+        row.className = "item";
+        row.setAttribute("role", "listitem");
+
+        const av = document.createElement("div");
+        av.className = "avatar";
+        const label = document.createElement("span");
+        label.textContent = initials(it.title);
+        av.appendChild(label);
+        const d = document.createElement("span");
+        d.className = "dot";
+        // online indicator: any member online (for groups); other user (for DM)
+        if (it.type === "dm"){
+          const other = it.members.find(u => u !== State.me.uid);
+          if (isOnline(other)) d.classList.add("online");
+        }else{
+          const onCount = it.members.filter(u=>isOnline(u)).length;
+          if (onCount>0) d.classList.add("online");
+        }
+        av.appendChild(d);
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        const strong = document.createElement("strong");
+        strong.textContent = it.title;
+        const small = document.createElement("small");
+        if (it.type === "dm"){
+          const other = it.members.find(u=>u!==State.me.uid);
+          const p = State.presence.get(other);
+          small.textContent = isOnline(other) ? "Online" : ("Last seen " + (p?.last?fmtAgo(p.last):"—"));
+        } else {
+          const onCount = it.members.filter(u=>isOnline(u)).length;
+          small.textContent = `${onCount}/${it.members.length} online`;
+        }
+        meta.append(strong, small);
+
+        const badge = document.createElement("span");
+        badge.className = "badge";
+        badge.textContent = (it.type === "dm") ? "DM" : "Group";
+
+        row.append(av, meta, badge);
+        row.addEventListener("click", ()=> openConversation(it));
+        if (State.current && State.current.type===it.type && State.current.id===it.id) row.classList.add("active");
+        frag.appendChild(row);
+      }
+      if (!frag.childNodes.length){
+        const empty = document.createElement("div");
+        empty.className = "hint";
+        empty.textContent = "No conversations match your filters.";
+        convList.appendChild(empty);
+      }else{
+        convList.appendChild(frag);
+      }
+    }
+
+    async function openConversation(it){
+      // swap header
+      State.current = it;
+      $(".item.active")?.classList.remove("active");
+      // mark selected (rerender list to apply active style)
+      renderConvList();
+
+      chatTitle.textContent = it.title || (it.type==="dm" ? "Direct Message" : "Group");
+      chatAvatar.innerHTML = "";
+      const lbl = document.createElement("span");
+      lbl.textContent = initials(it.title||"");
+      chatAvatar.appendChild(lbl);
+      chatAvatar.appendChild(chatDot);
+      renderCurrentPresence();
+
+      // unbind previous messages
+      if (State.unsubMessages) State.unsubMessages();
+
+      // fetch & watch messages (show only non-expired; and owner can purge)
+      log.innerHTML = "";
+      const collPath = it.type==="dm"
+        ? ["dmThreads", it.id, "messages"]
+        : ["groups", it.id, "messages"];
+      const collRef = collection(db, ...collPath);
+      const qy = query(collRef, orderBy("createdAt","asc"), limit(200));
+      State.unsubMessages = onSnapshot(qy, (qs)=>{
+        log.innerHTML = "";
+        const now = Date.now();
+        qs.forEach(s=>{
+          const m = s.data() || {};
+          const expMs = msFromTs(m.expireAt);
+          if (expMs && expMs < now) return; // don't render expired
+          renderMessageBubble(s.id, m);
+        });
+        // autoscroll to bottom
+        log.scrollTop = log.scrollHeight;
+      });
+    }
+
+    function renderMessageBubble(id, m){
+      const meUid = State.me.uid;
+      const mine = m.senderId === meUid;
+
+      const el = document.createElement("div");
+      el.className = "bubble" + (mine ? " mine" : "");
+      const who = State.users.get(m.senderId);
+      const whoName = who?.name || "—";
+      const txt = document.createElement("div");
+      txt.textContent = m.text || "";
+      el.appendChild(txt);
+
+      if (Array.isArray(m.attachments) && m.attachments.length){
+        const wrap = document.createElement("div");
+        wrap.className = "attachments";
+        for (const a of m.attachments){
+          const pill = document.createElement("a");
+          pill.className = "att";
+          pill.href = a.url;
+          pill.target = "_blank";
+          pill.rel = "noopener";
+          pill.textContent = a.name || a.type || "file";
+          wrap.appendChild(pill);
+        }
+        el.appendChild(wrap);
+      }
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      const when = m.createdAt?.toDate ? m.createdAt.toDate().toLocaleString() : "";
+      const exp = m.expireAt?.toDate ? m.expireAt.toDate() : null;
+      meta.textContent = `${whoName} • ${when}${exp?` • deletes in ${fmtAgo(msFromTs(exp))}`:""}`;
+      el.appendChild(meta);
+
+      log.appendChild(el);
+    }
+
+    /* ====== Send message (with Cloudinary widget) ====== */
+    function openCloudinary(cb){
+      const opts = {
+        cloudName: CLOUD,
+        uploadPreset: UP_PRESET,
+        folder: CL_FOLDER,
+        multiple: true,
+        sources: ["local","camera"],
+        resourceType: "auto"
+      };
+      const w = window.cloudinary?.createUploadWidget(opts, (err, res)=>{
+        if (!res || res.event !== "success") return;
+        const info = res.info || {};
+        cb && cb({
+          url: info.secure_url,
+          publicId: info.public_id,
+          resourceType: info.resource_type,
+          format: info.format,
+          bytes: info.bytes,
+          name: info.original_filename + (info.format ? "."+info.format : "")
+        });
+      });
+      w && w.open();
+    }
+
+    let pendingAttachments = [];
+    attachBtn.addEventListener("click", ()=>{
+      openCloudinary((file)=>{
+        pendingAttachments.push({
+          url: file.url,
+          publicId: file.publicId,
+          type: file.format || file.resourceType || "file",
+          name: file.name
+        });
+      });
+    });
+
+    async function sendMessage(){
+      if (!State.current) return;
+      const text = (msgInput.value || "").trim();
+      if (!text && pendingAttachments.length===0) return;
+
+      const collPath = State.current.type==="dm"
+        ? ["dmThreads", State.current.id, "messages"]
+        : ["groups", State.current.id, "messages"];
+      const data = {
+        text: text || "",
+        attachments: pendingAttachments.slice(0),
+        senderId: State.me.uid,
+        createdAt: serverTimestamp(),
+        expireAt: plusDaysTs(TTL_DAYS) // always set 40 days per your rule
+      };
+      await addDoc(collection(db, ...collPath), data);
+      msgInput.value = "";
+      pendingAttachments = [];
+      // scroll
+      setTimeout(()=>{ log.scrollTop = log.scrollHeight; }, 50);
+    }
+    sendBtn.addEventListener("click", sendMessage);
+    msgInput.addEventListener("keydown", (e)=>{ if (e.key==="Enter" && !e.shiftKey){ e.preventDefault(); sendMessage(); } });
+
+    /* ====== Purge expired (owner-only helper) ====== */
+    cleanupBtn.addEventListener("click", async ()=>{
+      if (!State.current) return;
+      const now = Date.now();
+      const collPath = State.current.type==="dm"
+        ? ["dmThreads", State.current.id, "messages"]
+        : ["groups", State.current.id, "messages"];
+      const snap = await getDocs(collection(db, ...collPath));
+      let removed = 0;
+      for (const d of snap.docs){
+        const m = d.data() || {};
+        const exp = msFromTs(m.expireAt);
+        if (exp && exp < now){
+          // try to delete attachments if they were stored in Firebase Storage (optional)
+          if (Array.isArray(m.attachments)){
+            for (const a of m.attachments){
+              if (a.storagePath){
+                try{ await deleteObject(sRef(storage, a.storagePath)); }catch(_){}
+              }
+              // Cloudinary files can be left to your lifecycle rules; removing via API requires admin key.
+            }
+          }
+          try{ await d.ref.delete(); removed++; }catch(_){}
+        }
+      }
+      alert(`Cleanup done. Removed ${removed} expired message(s).`);
+    });
+
+    /* ====== Promotions (email broadcast) ====== */
+    $("#previewEmail").addEventListener("click", ()=>{
+      const w = window.open("", "_blank");
+      if (!w) return;
+      w.document.write(`<html><head><title>Preview</title></head><body>${$("#promoHtml").value}</body></html>`);
+      w.document.close();
+    });
+
+    promoForm.addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      promoAlert.className = "alert";
+      promoAlert.textContent = "";
+
+      const subject = $("#promoSubject").value.trim();
+      const html = $("#promoHtml").value.trim();
+      const audience = $("#promoAudience").value;
+
+      if (!subject || !html){
+        promoAlert.className = "alert err";
+        promoAlert.textContent = "Please provide subject and HTML body.";
+        return;
+      }
+      try{
+        // Create an outbox doc; your Cloud Function (or backend) will send emails
+        const ref = await addDoc(collection(db, "promotions", "outbox", "items"), {
+          subject, html, audience,
+          createdAt: serverTimestamp(),
+          createdBy: State.me.uid,
+          status: "queued"
+        });
+        promoAlert.className = "alert ok";
+        promoAlert.textContent = "Queued! Your backend will deliver this email campaign.";
+        $("#promoForm").reset();
+      }catch(err){
+        console.error(err);
+        promoAlert.className = "alert err";
+        promoAlert.textContent = "Could not queue broadcast.";
+      }
+    });
+
+    /* ====== New DM quick action ====== */
+    $("#newDM").addEventListener("click", async ()=>{
+      const name = prompt("Type a name or email to start a DM:");
+      if (!name) return;
+      const found = [...State.users.values()].find(u =>
+        (u.name||"").toLowerCase().includes(name.toLowerCase()) ||
+        (u.email||"").toLowerCase().includes(name.toLowerCase()) ||
+        u.uid === name
+      );
+      if (!found) { alert("No user found."); return; }
+      const thread = { type:"dm", id: dmId(State.me.uid, found.uid), title: `${found.name} • ${found.role}${found.region?(" • "+found.region):""}`, members:[State.me.uid, found.uid] };
+      State.threads.unshift(thread);
+      openConversation(thread);
+      renderConvList();
+    });
+
+    /* ====== Ensure groups (owner only) ====== */
+    $("#ensureGroups").addEventListener("click", async ()=>{
+      if (!State.isOwner) return alert("Owner only.");
+      await buildCoreGroupsForOwner();
+      await fetchConversations();
+      alert("Groups checked/updated.");
+    });
+
+    /* ====== Filters ====== */
+    $("#searchConv").addEventListener("input", renderConvList);
+    $("#roleFilter").addEventListener("change", renderConvList);
+    $("#regionFilter").addEventListener("change", renderConvList);
+
+    /* ====== Auth & init ====== */
+    onAuthStateChanged(auth, async (u)=>{
+      if (!u){ location.assign("login.html?next=message.html"); return; }
+      State.me = u;
+
+      // check owner
+      const uref = doc(db, "users", u.uid);
+      const us = await getDoc(uref);
+      const isOwner = us.exists() && (us.data().role === "owner");
+      State.isOwner = !!isOwner;
+
+      // load user directory then presence then groups/DMs
+      await loadUsers();
+      startPresenceWatch();
+
+      // owner can auto-provision base groups
+      if (State.isOwner){ await buildCoreGroupsForOwner(); }
+      await fetchConversations();
+
+      // open the first item by default (if any)
+      if (State.threads.length) openConversation(State.threads[0]);
+    });
+  </script>
+</body>
+</html>

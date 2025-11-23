@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Owner Portal — Login</title>
+
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1220">
+
+  <style>
+    :root{
+      --brand:#0f3b66; --accent:#ff9900;
+      --bg:#f6f8fb; --card:#ffffff; --text:#0b1220; --muted:#6b7280; --line:#e5e7eb;
+      --btn:#0f3b66; --btnText:#ffffff; --danger:#d90429; --ok:#10b981;
+    }
+    html[data-theme="dark"]{
+      --bg:#0b1220; --card:#111827; --text:#f7f8fd; --muted:#9aa3b2; --line:#1f2937;
+      --btn:#1f3b66; --btnText:#eaf2ff;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.45}
+
+    .page{min-height:100vh;display:flex;flex-direction:column;
+      background:
+        radial-gradient(60% 60% at 15% 20%, rgba(15,59,102,.10), transparent 58%),
+        radial-gradient(50% 60% at 85% 15%, rgba(255,153,0,.12), transparent 60%);
+    }
+
+    header{padding:clamp(18px,4vw,36px) clamp(18px,5vw,48px);
+      display:flex;align-items:center;justify-content:space-between;gap:14px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--brand),#1a5aa0);box-shadow:0 10px 30px rgba(15,59,102,.25)}
+    .brand h1{margin:0;font-size:1.05rem;color:var(--brand);letter-spacing:.3px}
+    .controls{display:flex;align-items:center;gap:10px}
+    .icon-btn{border:1px solid var(--line);background:transparent;color:var(--text);height:38px;padding:0 12px;border-radius:10px;cursor:pointer;font-weight:700}
+
+    .hero{padding:0 clamp(18px,5vw,48px) clamp(10px,2vw,18px)}
+    .welcome{margin:8px 0 6px;font-weight:900;letter-spacing:.4px;
+      font-size:clamp(1.25rem,3.1vw,1.85rem);text-transform:uppercase;text-align:center}
+    .subtitle{margin:0;color:var(--muted);max-width:75ch;text-align:center}
+
+    .bottom{margin-top:auto;display:flex;justify-content:center;padding:clamp(16px,4vw,40px)}
+    .card{width:100%;max-width:560px;background:var(--card);border:1px solid var(--line);
+      border-radius:18px;box-shadow:0 10px 40px rgba(0,0,0,.06);padding:18px}
+    .card h2{margin:4px 2px 14px;font-size:1.2rem}
+    form{display:grid;gap:14px}
+    label{font-weight:800}
+    input{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:transparent;color:var(--text)}
+    input:focus{outline:3px solid color-mix(in srgb, var(--brand) 30%, transparent)}
+    .btn{border:0;border-radius:12px;padding:12px 14px;font-weight:900;cursor:pointer;background:var(--btn);color:var(--btnText)}
+    .btn[disabled]{opacity:.65;cursor:not-allowed}
+    .note{color:var(--muted);font-size:.95rem;margin-top:8px}
+    .warn{display:none;background:rgba(217,4,41,.1);border:1px solid rgba(217,4,41,.35);
+      color:var(--danger);padding:10px 12px;border-radius:10px;margin:10px 0;font-weight:700}
+    .ok{display:none;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.45);color:var(--ok);padding:10px 12px;border-radius:10px;margin:10px 0;font-weight:700}
+    footer{padding:12px 18px;color:var(--muted);text-align:center}
+
+    .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:16px}
+    .modal .sheet{background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:16px;max-width:520px;width:100%;padding:18px}
+    .modal h3{margin:0 0 8px}
+    .row{display:grid;gap:12px;margin-top:10px}
+    .modal .btns{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div id="configWarning" class="warn" role="alert"></div>
+
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <h1>OWNER PORTAL</h1>
+      </div>
+      <div class="controls">
+        <button id="langToggle" class="icon-btn" title="Language">EN</button>
+        <button id="themeToggle" class="icon-btn" title="Theme">🌓</button>
+      </div>
+    </header>
+
+    <section class="hero" aria-labelledby="wl">
+      <h2 id="wl" class="welcome" data-i18n="hero.title">
+        Welcome back, Your Excellency — CEO (Director General) — ABOUBAKAR MALAM
+      </h2>
+      <p class="subtitle" data-i18n="hero.desc">
+        Access your secure control centre. Choose language and theme above. Your email & password login is below.
+      </p>
+    </section>
+
+    <section class="bottom">
+      <div class="card" role="region" aria-labelledby="formTitle">
+        <h2 id="formTitle" data-i18n="form.title">Owner Login</h2>
+        <form id="formSignIn" novalidate>
+          <div class="row">
+            <label for="siEmail" data-i18n="form.email">Email</label>
+            <input id="siEmail" type="email" autocomplete="username"
+                   placeholder="you@example.com"
+                   data-i18n-attr="placeholder" data-i18n-placeholder="form.email.placeholder" required>
+          </div>
+          <div class="row">
+            <label for="siPass" data-i18n="form.password">Password</label>
+            <input id="siPass" type="password" autocomplete="current-password"
+                   placeholder="Your password"
+                   data-i18n-attr="placeholder" data-i18n-placeholder="form.password.placeholder" required>
+          </div>
+          <button id="submitBtn" type="submit" class="btn" data-i18n="form.login.cta">Log in</button>
+          <div id="msg" class="warn" role="status" aria-live="polite"></div>
+          <div id="ok" class="ok" role="status" aria-live="polite"></div>
+          <p class="note" data-i18n="foot.note">
+            Owner access only. SMS verification is required after your password.
+          </p>
+        </form>
+      </div>
+    </section>
+
+    <footer><small>&copy; <span id="year"></span> Owner Portal</small></footer>
+  </div>
+
+  <!-- SMS Code Modal -->
+  <div id="mfaChallenge" class="modal" aria-modal="true" role="dialog" aria-labelledby="challengeTitle">
+    <div class="sheet">
+      <h3 id="challengeTitle" data-i18n="mfa.challenge.title">Enter SMS Code</h3>
+      <p class="note" id="mfaDesc" data-i18n="mfa.challenge.desc">We sent a 6-digit code to your phone.</p>
+      <div class="row">
+        <label for="challengeCode" data-i18n="mfa.code">Verification code</label>
+        <input id="challengeCode" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="123456">
+      </div>
+      <div class="btns">
+        <button id="challengeCancel" class="icon-btn" data-i18n="mfa.cancel">Cancel</button>
+        <button id="challengeConfirm" class="icon-btn" data-i18n="mfa.verify">Verify</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- reCAPTCHA container (must exist) -->
+  <div id="recaptcha-container" style="position:fixed;left:-9999px;top:-9999px;"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import {
+      getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword,
+      onAuthStateChanged, getMultiFactorResolver, RecaptchaVerifier, PhoneAuthProvider,
+      PhoneMultiFactorGenerator, sendEmailVerification, signOut
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+    /* === Your Web App config (apiKey confirmed). Replace appId with the exact one from Firebase Console) === */
+    const firebaseConfig = {
+      apiKey: "AIzaSyCz446b_SZF8L1HykjAeHrc9LK9GVWX4Q4",
+      authDomain: "your-shop-3bdd1.firebaseapp.com",
+      projectId: "your-shop-3bdd1",
+      storageBucket: "your-shop-3bdd1.appspot.com",
+      messagingSenderId: "440558238881",
+      appId: "1:440558238881:web:b1594dc8a4bfd9089dc4e0"
+    };
+
+    /* ---------- UI: language + theme ---------- */
+    const $ = (s)=>document.querySelector(s);
+    const State = {
+      lang: localStorage.getItem("lang") || (navigator.language?.startsWith("fr") ? "fr" : "en"),
+      theme: localStorage.getItem("theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"),
+      recaptcha: null,
+      recaptchaWidgetId: null
+    };
+
+    const I18N = {
+      en:{
+        "hero.title":"Welcome back, Your Excellency — CEO (Director General) — ABOUBAKAR MALAM",
+        "hero.desc":"Access your secure control centre. Choose language and theme above. Your email & password login is below.",
+        "form.title":"Owner Login","form.email":"Email","form.email.placeholder":"you@example.com",
+        "form.password":"Password","form.password.placeholder":"Your password","form.login.cta":"Log in",
+        "foot.note":"Owner access only. SMS verification is required after your password.",
+        "err.config":"Firebase config is missing or invalid.",
+        "err.noemail":"Please enter your email.","err.nopass":"Please enter your password.",
+        "err.generic":"Something went wrong. Please try again.","err.badcred":"Incorrect email or password.",
+        "err.notowner":"Access restricted to Owner. You will be signed out.","err.verifyemail":"Please verify your email first. We’ve sent a link.",
+        "mfa.challenge.title":"Enter SMS Code","mfa.challenge.desc":"We sent a 6-digit code to your phone.","mfa.code":"Verification code",
+        "mfa.cancel":"Cancel","mfa.verify":"Verify",
+        "ok.signedin":"Signed in."
+      },
+      fr:{
+        "hero.title":"Bon retour, Excellence — PDG (Directeur Général) — ABOUBAKAR MALAM",
+        "hero.desc":"Accédez à votre centre de contrôle sécurisé. Choisissez la langue et le thème ci-dessus. Votre connexion e-mail et mot de passe est ci-dessous.",
+        "form.title":"Connexion — Propriétaire","form.email":"E-mail","form.email.placeholder":"vous@exemple.com",
+        "form.password":"Mot de passe","form.password.placeholder":"Votre mot de passe","form.login.cta":"Se connecter",
+        "foot.note":"Accès réservé au Propriétaire. Une vérification SMS est requise après votre mot de passe.",
+        "err.config":"La configuration Firebase est invalide.",
+        "err.noemail":"Veuillez saisir votre e-mail.","err.nopass":"Veuillez saisir votre mot de passe.",
+        "err.generic":"Un problème est survenu. Veuillez réessayer.","err.badcred":"E-mail ou mot de passe incorrect.",
+        "err.notowner":"Accès réservé au Propriétaire. Vous allez être déconnecté.","err.verifyemail":"Veuillez d’abord vérifier votre e-mail. Un lien a été envoyé.",
+        "mfa.challenge.title":"Saisir le code SMS","mfa.challenge.desc":"Nous avons envoyé un code à 6 chiffres sur votre téléphone.","mfa.code":"Code de vérification",
+        "mfa.cancel":"Annuler","mfa.verify":"Vérifier",
+        "ok.signedin":"Connecté."
+      }
+    };
+    const t=(k)=>I18N[State.lang][k]||k;
+    function applyLang(){
+      document.documentElement.setAttribute("lang", State.lang);
+      document.querySelectorAll("[data-i18n]").forEach(el=>{ el.textContent = t(el.getAttribute("data-i18n")); });
+      document.querySelectorAll("[data-i18n-attr]").forEach(el=>{
+        const attrs = el.getAttribute("data-i18n-attr").split(",").map(s=>s.trim());
+        attrs.forEach(a=>{
+          const key = el.getAttribute(`data-i18n-${a}`);
+          if(key) el.setAttribute(a, t(key));
+        });
+      });
+      $("#langToggle").textContent = State.lang.toUpperCase();
+    }
+    function applyTheme(){
+      document.documentElement.setAttribute("data-theme", State.theme);
+      document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{
+        m.setAttribute("content", State.theme==="dark" ? "#0b1220" : "#ffffff");
+      });
+      const btn=$("#themeToggle"); if(btn){ btn.textContent="🌓"; btn.title=`Theme: ${State.theme}`; }
+    }
+    $("#langToggle").addEventListener("click", ()=>{ State.lang=State.lang==="en"?"fr":"en"; localStorage.setItem("lang",State.lang); applyLang(); });
+    $("#themeToggle").addEventListener("click", ()=>{ State.theme=State.theme==="light"?"dark":"light"; localStorage.setItem("theme",State.theme); applyTheme(); });
+    $("#year").textContent = new Date().getFullYear(); applyLang(); applyTheme();
+
+    /* ---------- Firebase init ---------- */
+    let app, auth, db;
+    try{
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db   = getFirestore(app);
+      await setPersistence(auth, browserLocalPersistence);
+      auth.useDeviceLanguage && auth.useDeviceLanguage();
+
+      // Optional: log project in console to confirm correct project is loaded
+      console.log("Using project:", auth.app.options.projectId, "| Auth domain:", auth.app.options.authDomain);
+    }catch(e){
+      const w=$("#configWarning"); if(w){ w.style.display="block"; w.textContent = t("err.config"); }
+      console.error(e);
+    }
+
+    /* ---------- Helpers ---------- */
+    const showError=(m)=>{ const el=$("#msg"); el.textContent=m; el.style.display="block"; $("#ok").style.display="none"; };
+    const showOk   =(m)=>{ const el=$("#ok");  el.textContent=m; el.style.display="block"; $("#msg").style.display="none"; };
+    const openModal=(id)=>{ $(id).style.display="flex"; };
+    const closeModal=(id)=>{ $(id).style.display="none"; };
+    const disableBtn=(b)=>{ const btn=$("#submitBtn"); if(btn){ btn.disabled=b; btn.textContent = b ? (State.lang==="fr"?"Veuillez patienter…":"Please wait…") : t("form.login.cta"); } };
+
+    async function isOwner(uid){
+      try{
+        const snap = await getDoc(doc(db,"users",uid));
+        return snap.exists() && snap.data().role === "owner";
+      }catch(_){ return false; }
+    }
+
+    /* ===== reCAPTCHA management (FIX) ===== */
+    function destroyRecaptcha(){
+      try { State.recaptcha?.clear(); } catch(_) {}
+      State.recaptcha = null;
+      const c = document.getElementById("recaptcha-container");
+      if (c) c.innerHTML = "";
+      State.recaptchaWidgetId = null;
+    }
+
+    async function ensureRecaptcha(fresh=false){
+      if (fresh) destroyRecaptcha();
+      if (State.recaptcha) return State.recaptcha;
+      State.recaptcha = new RecaptchaVerifier(auth, "recaptcha-container", {
+        size: "invisible",
+        "expired-callback": ()=> destroyRecaptcha()
+      });
+      try{
+        State.recaptchaWidgetId = await State.recaptcha.render();
+      }catch(err){
+        console.warn("reCAPTCHA render error, rebuilding…", err);
+        destroyRecaptcha();
+        State.recaptcha = new RecaptchaVerifier(auth, "recaptcha-container", { size:"invisible" });
+        State.recaptchaWidgetId = await State.recaptcha.render();
+      }
+      return State.recaptcha;
+    }
+
+    /* ===== SMS MFA challenge (uses fresh reCAPTCHA each try) ===== */
+    async function solveSmsMfa(error){
+      const resolver = getMultiFactorResolver(auth, error);
+      const hint = resolver.hints && resolver.hints[0];
+      if(!hint){
+        showError(State.lang==="fr"
+          ? "Aucun facteur SMS n’est rattaché à ce compte."
+          : "No SMS factor is enrolled for this account.");
+        return Promise.reject(new Error("no-mfa-hint"));
+      }
+
+      await ensureRecaptcha(true);
+      const provider = new PhoneAuthProvider(auth);
+
+      let verificationId;
+      try {
+        verificationId = await provider.verifyPhoneNumber(
+          { multiFactorHint: hint, session: resolver.session },
+          State.recaptcha
+        );
+      } catch (e) {
+        console.error("verifyPhoneNumber error:", e);
+        const map = {
+          "auth/billing-not-enabled": State.lang==="fr"
+            ? "La facturation n’est pas activée pour ce projet. Passez au plan Blaze dans Firebase/Google Cloud pour envoyer des SMS."
+            : "Billing is not enabled for this project. Switch to the Blaze plan in Firebase/Google Cloud to send SMS.",
+          "auth/operation-not-allowed": State.lang==="fr"
+            ? "Activez « Téléphone » + « MFA SMS » dans Firebase."
+            : "Enable “Phone” + “MFA SMS” in Firebase.",
+          "auth/quota-exceeded": State.lang==="fr"
+            ? "Quota SMS dépassé. Ajoutez la facturation (Blaze) ou réessayez plus tard."
+            : "SMS quota exceeded. Add billing (Blaze) or try later.",
+          "auth/too-many-requests": State.lang==="fr"
+            ? "Trop de tentatives. Réessayez plus tard."
+            : "Too many attempts. Try again later.",
+          "auth/app-not-authorized": State.lang==="fr"
+            ? "Domaine non autorisé. Ajoutez votre domaine dans Auth → Paramètres."
+            : "Domain not authorized. Add your domain in Auth → Settings.",
+          "auth/invalid-app-credential": State.lang==="fr"
+            ? "Jeton reCAPTCHA invalide. Rafraîchissez et réessayez."
+            : "Invalid reCAPTCHA token. Refresh and try again."
+        };
+        showError(map[e.code] || e.message || t("err.generic"));
+        destroyRecaptcha();
+        return Promise.reject(e);
+      }
+
+      const masked = hint.phoneNumber ? hint.phoneNumber.replace(/\d(?=\d{2})/g,"•") : "";
+      const d=$("#mfaDesc"); if (d) d.textContent = (State.lang==="fr")
+        ? `Nous avons envoyé un code à 6 chiffres au ${masked}.`
+        : `We sent a 6-digit code to ${masked}.`;
+
+      openModal("#mfaChallenge");
+
+      return new Promise((resolve,reject)=>{
+        $("#challengeConfirm").onclick = async ()=>{
+          const code = $("#challengeCode").value.trim();
+          if (!code || code.length<6) return showError(State.lang==="fr" ? "Veuillez entrer le code." : "Please enter the code.");
+          try{
+            const cred = PhoneAuthProvider.credential(verificationId, code);
+            const assertion = PhoneMultiFactorGenerator.assertion(cred);
+            const userCred = await resolver.resolveSignIn(assertion);
+            closeModal("#mfaChallenge");
+            resolve(userCred.user);
+          }catch(e){
+            console.error("resolveSignIn error:", e);
+            showError(e.message || t("err.generic"));
+            destroyRecaptcha();
+          }
+        };
+        $("#challengeCancel").onclick = ()=>{ closeModal("#mfaChallenge"); reject(new Error("cancelled")); };
+      });
+    }
+
+    /* ===== Email + Password submit ===== */
+    $("#formSignIn").addEventListener("submit", async (e)=>{
+      e.preventDefault();
+      const email = $("#siEmail").value.trim(); const pass = $("#siPass").value;
+      if(!email) return showError(t("err.noemail"));
+      if(!pass)  return showError(t("err.nopass"));
+      disableBtn(true);
+      try{
+        const cred = await signInWithEmailAndPassword(auth, email, pass);
+        await afterLogin(cred.user);
+      }catch(error){
+        if (error.code === "auth/multi-factor-auth-required") {
+          try{
+            const user = await solveSmsMfa(error);
+            await afterLogin(user);
+          }catch(_){ /* handled in solver */ }
+        } else if (/wrong-password|invalid-credential|user-not-found/i.test(error.code||"")) {
+          showError(t("err.badcred"));
+        } else {
+          showError(error.message || t("err.generic"));
+        }
+      } finally {
+        disableBtn(false);
+      }
+    });
+
+    /* ===== Post-login checks → dashboard ===== */
+    async function afterLogin(user){
+      if (!user.emailVerified){
+        try{ await sendEmailVerification(user); }catch(_){}
+        await signOut(auth);
+        return showError(t("err.verifyemail"));
+      }
+      const owner = await isOwner(user.uid);
+      if(!owner){ await signOut(auth); return showError(t("err.notowner")); }
+      showOk(t("ok.signedin"));
+      location.assign("index.html");
+    }
+
+    /* ===== Auto-redirect if already signed in & owner ===== */
+    onAuthStateChanged(auth, async (u)=>{
+      if(!u) return;
+      const owner = await isOwner(u.uid);
+      if (owner) { location.assign("index.html"); }
+      else { await signOut(auth); }
+    });
+
+    // year
+    const y=document.getElementById("year"); if(y) y.textContent = new Date().getFullYear();
+  </script>
+
+  <!-- ADDED PER YOUR REQUEST -->
+  <script type="module">
+    import { attachLoginPage } from './auth.js';
+    attachLoginPage({
+      redirectTo: 'index.html',           // where to go after successful owner sign-in
+      recaptchaContainerId: 'recaptcha-container'
+    });
+  </script>
+</body>
+</html>

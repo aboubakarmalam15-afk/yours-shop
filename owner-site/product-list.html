@@ -1,0 +1,798 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Owner — Product List</title>
+
+  <!-- Perfect light/dark on mobile -->
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1220">
+
+  <style>
+    :root{
+      --brand:#0f3b66; --accent:#ff9900;
+      --bg:#f6f8fb; --card:#ffffff; --text:#0b1220; --muted:#6b7280; --line:#e5e7eb;
+      --ok:#10b981; --warn:#f59e0b; --danger:#ef4444;
+      --sidebar:#0f3b66; --sidebarText:#eaf2ff; --sidebarActive:#ff9900;
+      --shadow:0 10px 30px rgba(0,0,0,.08);
+    }
+    html[data-theme="dark"]{
+      --bg:#0b1220; --card:#111827; --text:#f7f8fd; --muted:#9aa3b2; --line:#1f2937;
+      --sidebar:#0b1220; --sidebarText:#eaf2ff; --sidebarActive:#ff9900;
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    a{color:var(--brand);text-decoration:none}
+    .muted{color:var(--muted)}
+
+    /* Layout */
+    .layout{min-height:100vh;display:grid;grid-template-columns:260px 1fr}
+    @media (max-width: 880px){ .layout{grid-template-columns:1fr} }
+
+    /* Sidebar */
+    .side{
+      position:sticky;top:0;height:100vh;background:var(--sidebar);color:var(--sidebarText);
+      display:flex;flex-direction:column;gap:8px;padding:14px 12px;border-right:1px solid rgba(255,255,255,.08)
+    }
+    @media (max-width: 880px){
+      .side{position:fixed;inset:0 auto 0 0;width:84%;max-width:320px;left:-100%;transition:left .25s;z-index:30}
+      .side.open{left:0}
+    }
+    .brand{display:flex;align-items:center;gap:10px;padding:6px 8px}
+    .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--brand),#1a5aa0)}
+    .brand strong{letter-spacing:.3px}
+    nav{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+    .nav-item{
+      display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;color:var(--sidebarText);
+      text-decoration:none;border:1px solid transparent
+    }
+    .nav-item:hover{background:rgba(255,255,255,.06)}
+    .nav-item.active{background:rgba(255,153,0,.18);border-color:rgba(255,153,0,.4);color:#fff}
+    .nav-item svg{width:18px;height:18px;flex:0 0 auto}
+    .spacer{flex:1}
+    .side-controls{display:flex;gap:8px}
+    .ctrl{
+      border:1px solid rgba(255,255,255,.25);background:transparent;color:var(--sidebarText);
+      height:36px;padding:0 10px;border-radius:10px;cursor:pointer;font-weight:700
+    }
+
+    /* Content */
+    .content{display:flex;flex-direction:column;min-width:0}
+    header.top{
+      position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--line);
+      display:flex;align-items:center;justify-content:space-between;padding:10px 14px
+    }
+    .welcome{font-weight:900;letter-spacing:.4px;margin:0;text-transform:uppercase;font-size:clamp(1rem,2.8vw,1.4rem)}
+    .top-controls{display:flex;align-items:center;gap:8px}
+    .icon-btn{border:1px solid var(--line);background:transparent;color:var(--text);height:36px;padding:0 10px;border-radius:10px;cursor:pointer;font-weight:700}
+    .danger-btn{border-color:rgba(239,68,68,.45);color:var(--danger)}
+    #backdrop{display:none}
+    @media (max-width: 880px){
+      #backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:25}
+      #backdrop.show{display:block}
+    }
+
+    /* Filters */
+    .filters{
+      display:grid;grid-template-columns:repeat(6, minmax(160px,1fr));gap:10px;padding:12px 14px
+    }
+    @media (max-width: 1280px){ .filters{grid-template-columns:repeat(3, minmax(160px,1fr))} }
+    @media (max-width: 700px){ .filters{grid-template-columns:1fr} }
+    select, input[type="date"], input[type="search"], input[type="number"], input[type="text"]{
+      width:100%;height:38px;border:1px solid var(--line);background:var(--card);color:var(--text);
+      border-radius:10px;padding:6px 10px
+    }
+    .chips{display:flex;gap:8px;flex-wrap:wrap}
+    .chip{border:1px solid var(--line);background:transparent;color:var(--text);height:30px;padding:0 8px;border-radius:999px;cursor:pointer;font-weight:700;font-size:.9rem}
+    .chip.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+    .btn{border:1px solid var(--line);background:transparent;color:var(--text);height:32px;padding:0 10px;border-radius:8px;cursor:pointer;font-weight:700}
+    .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+    .btn.warn{border-color:rgba(245,158,11,.55);color:var(--warn)}
+    .btn.ok{border-color:rgba(16,185,129,.5);color:var(--ok)}
+    .btn.danger{border-color:rgba(239,68,68,.45);color:var(--danger)}
+
+    /* KPIs */
+    .kpis{padding:0 14px 8px;display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+    @media (max-width: 1280px){ .kpis{grid-template-columns:repeat(3,1fr)} }
+    @media (max-width: 640px){ .kpis{grid-template-columns:repeat(2,1fr)} }
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;box-shadow:var(--shadow)}
+    .k{font-size:.9rem;color:var(--muted);margin:0 0 4px}
+    .v{font-size:1.3rem;font-weight:800;margin:0}
+    .best{display:flex;gap:8px;align-items:center}
+    .best img{width:36px;height:36px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+
+    /* Bulk bar */
+    .bulkbar{
+      display:none;align-items:center;justify-content:space-between;gap:10px;margin:0 14px 8px;padding:8px 10px;
+      border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:var(--shadow)
+    }
+    .bulkbar.show{display:flex}
+    .bulk-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+    /* Table */
+    .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;margin:0 14px 16px;box-shadow:var(--shadow);overflow:hidden}
+    .panel h3{margin:10px 12px;font-size:1.02rem;display:flex;align-items:center;justify-content:space-between}
+    .table{width:100%;border-collapse:collapse}
+    .table th,.table td{border-bottom:1px solid var(--line);padding:10px 8px;text-align:left}
+    .table th{position:sticky;top:0;background:var(--card);z-index:1}
+    .table tr:hover td{background:rgba(127,127,127,.06)}
+    .thumb{width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid var(--line);background:#f3f4f6}
+    .pill{display:inline-block;padding:4px 8px;border-radius:999px;font-size:.8rem;font-weight:800}
+    .s-available{background:#dcfce7;color:#166534}
+    .s-draft{background:#f3f4f6;color:#111827}
+    .s-out{background:#fee2e2;color:#991b1b}
+    .s-discontinued{background:#e5e7eb;color:#374151}
+    .tag{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;background:rgba(127,127,127,.12);border:1px solid var(--line);font-size:.8rem}
+    .right{text-align:right}
+  </style>
+</head>
+<body>
+<div class="layout">
+  <!-- ===== Sidebar ===== -->
+  <aside class="side" id="sidebar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"></div>
+      <strong>OWNER</strong>
+    </div>
+    <nav>
+      <a href="index.html" class="nav-item" title="Dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 10l9-7 9 7v10a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2V14H8v6a2 2 0 0 1-2 2H3z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <a href="order.html" class="nav-item" title="Orders">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M16 14h4v-4h-5z"/></svg>
+        <span>Orders</span>
+      </a>
+      <a href="product-list.html" class="nav-item active" title="Products">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 16V8a2 2 0 0 0-2-2h-4l-2-2H9L7 6H5a2 2 0 0 0-2 2v8M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2"/></svg>
+        <span>Products</span>
+      </a>
+      <a href="message.html" class="nav-item" title="Messaging">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
+        <span>Messaging</span>
+      </a>
+      <a href="wallet.html" class="nav-item" title="Wallet">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <rect x="3" y="6" width="18" height="12" rx="2" stroke-width="2"/>
+          <path d="M15 12h6v-4h-6z" stroke-width="2"/>
+          <path d="M5 8h9" stroke-width="2"/>
+        </svg>
+        <span>Wallet</span>
+      </a>
+    </nav>
+    <div class="spacer"></div>
+    <div class="side-controls">
+      <button id="sideLang" class="ctrl">EN</button>
+      <button id="sideTheme" class="ctrl">🌓</button>
+    </div>
+  </aside>
+
+  <!-- Backdrop for mobile sidebar -->
+  <div id="backdrop"></div>
+
+  <!-- ===== Content ===== -->
+  <main class="content">
+    <header class="top">
+      <h2 class="welcome" id="greet">PRODUCTS — OWNER</h2>
+      <div class="top-controls">
+        <button id="menuBtn" class="icon-btn" title="Menu">☰</button>
+        <button id="langToggle" class="icon-btn" title="Language">EN</button>
+        <button id="themeToggle" class="icon-btn" title="Theme">🌓</button>
+        <button id="signOutBtn" class="icon-btn danger-btn">Sign out</button>
+      </div>
+    </header>
+
+    <div id="configWarning" class="warnbox" role="alert" style="display:none"></div>
+
+    <!-- Filters -->
+    <section class="filters">
+      <select id="regionSelect" aria-label="Region"></select>
+      <select id="statusSelect" aria-label="Status">
+        <option value="ALL">All Statuses</option>
+        <option value="available">Available</option>
+        <option value="draft">Drafted</option>
+        <option value="out_of_stock">Out of Stock</option>
+        <option value="discontinued">Discontinued</option>
+      </select>
+      <select id="categorySelect" aria-label="Category">
+        <option value="ALL">All Categories</option>
+      </select>
+      <select id="sortSelect" aria-label="Sort By">
+        <option value="profit_desc">Net Profit (high → low)</option>
+        <option value="price_desc">Price (high → low)</option>
+        <option value="price_asc">Price (low → high)</option>
+        <option value="stock_desc">Stock (high → low)</option>
+        <option value="name_asc">Name (A → Z)</option>
+        <option value="created_desc">Newest</option>
+      </select>
+      <input id="minPrice" type="number" min="0" placeholder="Min price">
+      <input id="maxPrice" type="number" min="0" placeholder="Max price">
+      <input id="minMargin" type="number" min="0" max="100" placeholder="Min margin %">
+      <input id="minStock" type="number" min="0" placeholder="Min stock">
+      <input id="searchBox" type="search" placeholder="Search name, SKU, ID…"/>
+      <div class="chips" style="grid-column:1/-1">
+        <label class="tag"><input type="checkbox" id="onlyInStock"/> <span>Only in stock</span></label>
+        <label class="tag"><input type="checkbox" id="onlyWithPhoto"/> <span>Only with photo</span></label>
+        <span class="spacer"></span>
+        <button id="resetFilters" class="btn">Reset</button>
+        <button id="refreshBtn" class="btn">↻ Refresh</button>
+        <button id="exportBtn" class="btn">Export CSV</button>
+        <label class="tag"><input type="checkbox" id="autoRefresh"/> <span>Auto refresh</span></label>
+      </div>
+    </section>
+
+    <!-- KPIs -->
+    <section class="kpis">
+      <article class="card">
+        <p class="k">Products (Filtered)</p>
+        <p id="kpiCount" class="v">0</p>
+      </article>
+      <article class="card">
+        <p class="k">Available</p>
+        <p id="kpiAvail" class="v ok">0</p>
+      </article>
+      <article class="card">
+        <p class="k">Drafted</p>
+        <p id="kpiDraft" class="v">0</p>
+      </article>
+      <article class="card">
+        <p class="k">Out of Stock</p>
+        <p id="kpiOut" class="v warn">0</p>
+      </article>
+      <article class="card">
+        <p class="k">Discontinued</p>
+        <p id="kpiDis" class="v">0</p>
+      </article>
+      <article class="card">
+        <p class="k">Top Net Profit / Unit</p>
+        <div id="kpiTop" class="best"><img id="kpiTopImg" alt="" src="" onerror="this.style.display='none'"><div><div id="kpiTopName" style="font-weight:800">—</div><small id="kpiTopVal" class="muted">XAF 0</small></div></div>
+      </article>
+    </section>
+
+    <!-- Bulk bar -->
+    <div id="bulkBar" class="bulkbar">
+      <div id="bulkSelCount"><strong>0</strong> selected</div>
+      <div class="bulk-actions">
+        <button class="btn ok" id="bulkMarkAvailable">Mark Available</button>
+        <button class="btn warn" id="bulkMarkOut">Mark Out of Stock</button>
+        <button class="btn" id="bulkMarkDraft">Mark Draft</button>
+        <button class="btn danger" id="bulkMarkDis">Mark Discontinued</button>
+        <button class="btn" id="bulkExport">Export</button>
+      </div>
+    </div>
+
+    <!-- Product table -->
+    <section class="panel">
+      <h3>
+        <span>Products</span>
+        <span>
+          <button class="btn" id="loadMoreBtn">Load more</button>
+        </span>
+      </h3>
+      <div style="overflow:auto">
+        <table class="table" id="productsTable">
+          <thead>
+          <tr>
+            <th><input type="checkbox" id="selAll"></th>
+            <th>Product</th>
+            <th>Status</th>
+            <th>Region</th>
+            <th>Category</th>
+            <th>Price</th>
+            <th>Cost</th>
+            <th>Net Profit / Unit</th>
+            <th>Margin %</th>
+            <th>Stock</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+          </thead>
+          <tbody id="productsBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer><small>&copy; <span id="year"></span> Owner Portal</small></footer>
+  </main>
+</div>
+
+<!-- Firebase v8 SDKs -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<!-- Config -->
+<script>
+  window.__FIREBASE_CONFIG__ = window.__FIREBASE_CONFIG__ || {
+    apiKey: "AIzaSyCz446b_SZF8L1HykjAeHrc9LK9GVWX4Q4",
+    authDomain: "your-shop-3bdd1.firebaseapp.com",
+    projectId: "your-shop-3bdd1",
+    storageBucket: "your-shop-3bdd1.appspot.com",
+    messagingSenderId: "440558238881"
+  };
+</script>
+
+<script>
+/* ============ Shortcuts & State ============ */
+const $ = (s)=>document.querySelector(s);
+const $$ = (s)=>document.querySelectorAll(s);
+const State = {
+  theme: localStorage.getItem("theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"),
+  lang:  localStorage.getItem("lang")  || (navigator.language?.startsWith("fr") ? "fr" : "en"),
+  user:null, db:null,
+  filters:{ region:"ALL", status:"ALL", category:"ALL", q:"", minPrice:null, maxPrice:null, minMargin:null, minStock:null, onlyInStock:false, onlyWithPhoto:false },
+  products:[],
+  page:{ limit:60, cursor:null, listeningUnsub:null },
+  selected:new Set(),
+  categories:new Set()
+};
+
+/* ============ Theme ============ */
+function applyTheme(){
+  document.documentElement.setAttribute("data-theme", State.theme);
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{
+    m.setAttribute("content", State.theme==="dark" ? "#0b1220" : "#ffffff");
+  });
+}
+function toggleTheme(){ State.theme = State.theme==="light" ? "dark" : "light"; localStorage.setItem("theme", State.theme); applyTheme(); }
+$("#themeToggle").addEventListener("click", toggleTheme);
+$("#sideTheme").addEventListener("click", toggleTheme);
+applyTheme();
+
+/* ============ Language / I18N ============ */
+const I18N = {
+  en:{
+    navDashboard:"Dashboard", navOrders:"Orders", navProducts:"Products", navMessaging:"Messaging", navWallet:"Wallet",
+    greet:"PRODUCTS — OWNER", signOut:"Sign out",
+    allRegions:"All Regions", allStatuses:"All Statuses", allCategories:"All Categories",
+    status_available:"Available", status_draft:"Drafted", status_out_of_stock:"Out of Stock", status_discontinued:"Discontinued",
+    filters:{ minPrice:"Min price", maxPrice:"Max price", minMargin:"Min margin %", minStock:"Min stock", search:"Search name, SKU, ID…", onlyStock:"Only in stock", onlyPhoto:"Only with photo", reset:"Reset", refresh:"↻ Refresh", export:"Export CSV", auto:"Auto refresh", sort:"Sort By" },
+    kTitles:{ count:"Products (Filtered)", available:"Available", draft:"Drafted", out:"Out of Stock", discontinued:"Discontinued", top:"Top Net Profit / Unit" },
+    table:{ products:"Products", product:"Product", status:"Status", region:"Region", category:"Category", price:"Price", cost:"Cost", profit:"Net Profit / Unit", margin:"Margin %", stock:"Stock", created:"Created", actions:"Actions", open:"Open" },
+    warn:{ firebaseMissing:"Firebase config is missing or placeholder.", firebaseInitErr:"Firebase init error.", indexNeeded:"A Firestore composite index may be required for this filter.", notSigned:"You are not signed in. Redirecting to login…" },
+    bulkSel:"selected", bulk:{ avail:"Mark Available", out:"Mark Out of Stock", draft:"Mark Draft", dis:"Mark Discontinued", done:"Done.", fail:"Bulk action failed." },
+    sort:{ profit_desc:"Net Profit (high → low)", price_desc:"Price (high → low)", price_asc:"Price (low → high)", stock_desc:"Stock (high → low)", name_asc:"Name (A → Z)", created_desc:"Newest" },
+    actions:{ markAvail:"Mark Available", markOut:"Mark Out of Stock", markDraft:"Mark Draft", markDis:"Mark Discontinued" }
+  },
+  fr:{
+    navDashboard:"Tableau de bord", navOrders:"Commandes", navProducts:"Produits", navMessaging:"Messagerie", navWallet:"Portefeuille",
+    greet:"PRODUITS — PROPRIÉTAIRE", signOut:"Se déconnecter",
+    allRegions:"Toutes les régions", allStatuses:"Tous les statuts", allCategories:"Toutes les catégories",
+    status_available:"Disponible", status_draft:"Brouillon", status_out_of_stock:"Rupture", status_discontinued:"Arrêté",
+    filters:{ minPrice:"Prix min", maxPrice:"Prix max", minMargin:"Marge min %", minStock:"Stock min", search:"Rechercher nom, SKU, ID…", onlyStock:"Uniquement en stock", onlyPhoto:"Uniquement avec photo", reset:"Réinitialiser", refresh:"↻ Rafraîchir", export:"Exporter CSV", auto:"Rafraîchissement auto", sort:"Trier par" },
+    kTitles:{ count:"Produits (filtrés)", available:"Disponibles", draft:"Brouillons", out:"Ruptures", discontinued:"Arrêtés", top:"Meilleur bénéfice net / unité" },
+    table:{ products:"Produits", product:"Produit", status:"Statut", region:"Région", category:"Catégorie", price:"Prix", cost:"Coût", profit:"Bénéfice net / unité", margin:"Marge %", stock:"Stock", created:"Créé", actions:"Actions", open:"Ouvrir" },
+    warn:{ firebaseMissing:"La configuration Firebase est absente ou fictive.", firebaseInitErr:"Erreur d’initialisation Firebase.", indexNeeded:"Un index composite Firestore peut être requis pour ce filtre.", notSigned:"Vous n’êtes pas connecté. Redirection vers la connexion…" },
+    bulkSel:"sélectionné(s)", bulk:{ avail:"Marquer disponible", out:"Marquer rupture", draft:"Marquer brouillon", dis:"Marquer arrêté", done:"Terminé.", fail:"Échec de l’action groupée." },
+    sort:{ profit_desc:"Bénéfice net (haut → bas)", price_desc:"Prix (haut → bas)", price_asc:"Prix (bas → haut)", stock_desc:"Stock (haut → bas)", name_asc:"Nom (A → Z)", created_desc:"Plus récents" },
+    actions:{ markAvail:"Marquer disponible", markOut:"Marquer rupture", markDraft:"Marquer brouillon", markDis:"Marquer arrêté" }
+  }
+};
+function t(path){
+  const parts = path.split(".");
+  let cur = I18N[State.lang];
+  for(const p of parts){ cur = cur?.[p]; }
+  return cur ?? path;
+}
+function applyLang(){
+  document.documentElement.lang = State.lang;
+  // Header & nav
+  $("#greet").textContent = t("greet");
+  document.querySelector('a[title="Dashboard"] span').textContent = t("navDashboard");
+  document.querySelector('a[title="Orders"] span').textContent    = t("navOrders");
+  document.querySelector('a[title="Products"] span').textContent  = t("navProducts");
+  document.querySelector('a[title="Messaging"] span').textContent = t("navMessaging");
+  document.querySelector('a[title="Wallet"] span').textContent    = t("navWallet");
+  $("#signOutBtn").textContent = t("signOut");
+  $("#langToggle").textContent = State.lang.toUpperCase();
+  $("#sideLang").textContent   = State.lang.toUpperCase();
+
+  // Select placeholders and options
+  $("#regionSelect").options[0].textContent = t("allRegions");
+  const statSel = $("#statusSelect");
+  statSel.querySelector('option[value="ALL"]').textContent = t("allStatuses");
+  statSel.querySelector('option[value="available"]').textContent = t("status_available");
+  statSel.querySelector('option[value="draft"]').textContent      = t("status_draft");
+  statSel.querySelector('option[value="out_of_stock"]').textContent = t("status_out_of_stock");
+  statSel.querySelector('option[value="discontinued"]').textContent = t("status_discontinued");
+  $("#categorySelect").options[0].textContent = t("allCategories");
+
+  // Filter placeholders
+  $("#minPrice").placeholder = t("filters.minPrice");
+  $("#maxPrice").placeholder = t("filters.maxPrice");
+  $("#minMargin").placeholder= t("filters.minMargin");
+  $("#minStock").placeholder = t("filters.minStock");
+  $("#searchBox").placeholder= t("filters.search");
+  document.querySelector('#onlyInStock + span').textContent = " " + t("filters.onlyStock");
+  document.querySelector('#onlyWithPhoto + span').textContent = " " + t("filters.onlyPhoto");
+  $("#resetFilters").textContent = t("filters.reset");
+  $("#refreshBtn").textContent   = t("filters.refresh");
+  $("#exportBtn").textContent    = t("filters.export");
+  document.querySelector('#autoRefresh + span').textContent = " " + t("filters.auto");
+
+  // Sort select
+  const sortSel = $("#sortSelect");
+  sortSel.querySelector('option[value="profit_desc"]').textContent = t("sort.profit_desc");
+  sortSel.querySelector('option[value="price_desc"]').textContent  = t("sort.price_desc");
+  sortSel.querySelector('option[value="price_asc"]').textContent   = t("sort.price_asc");
+  sortSel.querySelector('option[value="stock_desc"]').textContent  = t("sort.stock_desc");
+  sortSel.querySelector('option[value="name_asc"]').textContent    = t("sort.name_asc");
+  sortSel.querySelector('option[value="created_desc"]').textContent= t("sort.created_desc");
+
+  // KPIs titles
+  document.querySelectorAll(".kpis .card .k")[0].textContent = t("kTitles.count");
+  document.querySelectorAll(".kpis .card .k")[1].textContent = t("kTitles.available");
+  document.querySelectorAll(".kpis .card .k")[2].textContent = t("kTitles.draft");
+  document.querySelectorAll(".kpis .card .k")[3].textContent = t("kTitles.out");
+  document.querySelectorAll(".kpis .card .k")[4].textContent = t("kTitles.discontinued");
+  document.querySelectorAll(".kpis .card .k")[5].textContent = t("kTitles.top");
+
+  // Table headers
+  const ths = $("#productsTable thead tr").children;
+  ths[1].textContent=t("table.product");
+  ths[2].textContent=t("table.status");
+  ths[3].textContent=t("table.region");
+  ths[4].textContent=t("table.category");
+  ths[5].textContent=t("table.price");
+  ths[6].textContent=t("table.cost");
+  ths[7].textContent=t("table.profit");
+  ths[8].textContent=t("table.margin");
+  ths[9].textContent=t("table.stock");
+  ths[10].textContent=t("table.created");
+  ths[11].textContent=t("table.actions");
+
+  document.querySelector(".panel h3 span").textContent = t("table.products");
+  $("#loadMoreBtn").textContent = (State.lang==="fr" ? "Charger plus" : "Load more");
+
+  renderTable(); // update row badges text
+}
+function toggleLang(){ State.lang = (State.lang==="en" ? "fr" : "en"); localStorage.setItem("lang", State.lang); applyLang(); }
+$("#langToggle").addEventListener("click", toggleLang);
+$("#sideLang").addEventListener("click", toggleLang);
+
+/* ============ Basic UI ============ */
+$("#menuBtn").addEventListener("click", ()=>{ $("#sidebar").classList.toggle("open"); $("#backdrop").classList.toggle("show"); });
+$("#backdrop").addEventListener("click", ()=>{ $("#sidebar").classList.remove("open"); $("#backdrop").classList.remove("show"); });
+$("#year").textContent = new Date().getFullYear();
+
+/* ============ Regions ============ */
+const REGIONS = [
+  {en:"Adamawa", fr:"Adamaoua"},
+  {en:"Centre", fr:"Centre"},
+  {en:"East", fr:"Est"},
+  {en:"Far North", fr:"Extrême-Nord"},
+  {en:"Littoral", fr:"Littoral"},
+  {en:"North", fr:"Nord"},
+  {en:"North-West", fr:"Nord-Ouest"},
+  {en:"West", fr:"Ouest"},
+  {en:"South", fr:"Sud"},
+  {en:"South-West", fr:"Sud-Ouest"}
+];
+function fillRegions(){
+  const sel = $("#regionSelect"); sel.innerHTML="";
+  const optAll = document.createElement("option"); optAll.value="ALL"; optAll.textContent = t("allRegions"); sel.appendChild(optAll);
+  REGIONS.forEach(r=>{ const o=document.createElement("option"); o.value=r.en; o.textContent=(State.lang==="fr"?r.fr:r.en); sel.appendChild(o); });
+  sel.value = State.filters.region;
+}
+
+/* ============ Firebase Init + Gate ============ */
+let auth=null, db=null;
+(function initFirebase(){
+  const cfg = window.__FIREBASE_CONFIG__;
+  if(!cfg || /YOUR_/.test(JSON.stringify(cfg))){
+    const w=$("#configWarning"); w.style.display="block"; w.textContent = t("warn.firebaseMissing");
+  }
+  try{
+    const app = firebase.apps?.length ? firebase.app() : firebase.initializeApp(cfg);
+    auth = firebase.auth(); auth.useDeviceLanguage();
+    db   = firebase.firestore();
+    State.db = db;
+  }catch(e){
+    console.error(e);
+    const w=$("#configWarning"); w.style.display="block"; w.textContent = t("warn.firebaseInitErr");
+  }
+})();
+$("#signOutBtn").addEventListener("click", ()=> auth?.signOut?.());
+
+if(auth && typeof auth.onAuthStateChanged==="function"){
+  auth.onAuthStateChanged(async (user)=>{
+    if(!user){ alert(t("warn.notSigned")); return location.assign("/login.html"); }
+    State.user = user;
+    try{
+      const doc = await db.collection("users").doc(user.uid).get();
+      if(!doc.exists || !["owner","manager","admin"].includes(doc.get("role"))){ await auth.signOut(); return; }
+    }catch(e){ console.warn(e); }
+    initFilters();
+    runQuery(true);
+    applyLang();
+  });
+}else{
+  // Fallback demo data so page still works without Firebase
+  initFilters();
+  fillRegions();
+  State.products = demoProducts();
+  harvestCategories();
+  renderTable();
+  applyLang();
+}
+
+/* ============ Filters ============ */
+const regionSelect=$("#regionSelect"), statusSelect=$("#statusSelect"), categorySelect=$("#categorySelect");
+const sortSelect=$("#sortSelect");
+const searchBox=$("#searchBox");
+["minPrice","maxPrice","minMargin","minStock"].forEach(id=> $(`#${id}`).addEventListener("change", ()=>renderTable()));
+$("#onlyInStock").addEventListener("change", ()=>{ State.filters.onlyInStock = $("#onlyInStock").checked; renderTable(); });
+$("#onlyWithPhoto").addEventListener("change", ()=>{ State.filters.onlyWithPhoto = $("#onlyWithPhoto").checked; renderTable(); });
+$("#resetFilters").addEventListener("click", ()=>{
+  State.filters = { region:"ALL", status:"ALL", category:"ALL", q:"", minPrice:null, maxPrice:null, minMargin:null, minStock:null, onlyInStock:false, onlyWithPhoto:false };
+  regionSelect.value="ALL"; statusSelect.value="ALL"; categorySelect.value="ALL"; sortSelect.value="profit_desc";
+  $("#minPrice").value=""; $("#maxPrice").value=""; $("#minMargin").value=""; $("#minStock").value="";
+  $("#onlyInStock").checked=false; $("#onlyWithPhoto").checked=false; $("#searchBox").value="";
+  runQuery(true);
+});
+function initFilters(){
+  fillRegions();
+  sortSelect.value="profit_desc";
+  regionSelect.addEventListener("change", ()=>{ State.filters.region=regionSelect.value; runQuery(true); });
+  statusSelect.addEventListener("change", ()=>{ State.filters.status=statusSelect.value; runQuery(true); });
+  categorySelect.addEventListener("change", ()=>{ State.filters.category=categorySelect.value; renderTable(); });
+  sortSelect.addEventListener("change", ()=> renderTable());
+  $("#refreshBtn").addEventListener("click", ()=> runQuery(true));
+  $("#exportBtn").addEventListener("click", ()=> exportCSV(false));
+  $("#autoRefresh").addEventListener("change", (e)=>{ if(e.target.checked){ State.autoT=setInterval(()=>runQuery(true), 60000); } else { clearInterval(State.autoT); }});
+  searchBox.addEventListener("input", ()=> renderTable());
+  $("#loadMoreBtn").addEventListener("click", ()=> runQuery(false));
+}
+
+/* ============ Firestore Query & Live ============ */
+function stopListening(){ if(State.page.listeningUnsub){ try{ State.page.listeningUnsub(); }catch(_){ } State.page.listeningUnsub=null; } }
+async function runQuery(reset){
+  if(!State.db){ // no firebase → keep demo data
+    fillRegions();
+    harvestCategories();
+    renderTable();
+    return;
+  }
+  try{
+    if(reset){ stopListening(); State.products=[]; State.page.cursor=null; State.selected.clear(); toggleBulkBar(); }
+    let q = State.db.collection("products").orderBy("createdAt","desc");
+    if(State.filters.region!=="ALL") q = q.where("region","==", State.filters.region);
+    if(State.filters.status!=="ALL") q = q.where("status","==", State.filters.status);
+    if(State.page.cursor) q = q.startAfter(State.page.cursor);
+    q = q.limit(State.page.limit);
+
+    State.page.listeningUnsub = q.onSnapshot(snap=>{
+      const added=[];
+      snap.docChanges().forEach(ch=>{
+        const d = { id: ch.doc.id, ...ch.doc.data() };
+        if(ch.type==="added") added.push(d);
+        if(ch.type==="modified"){
+          const i=State.products.findIndex(p=>p.id===d.id);
+          if(i>=0) State.products[i]=d; else State.products.push(d);
+        }
+        if(ch.type==="removed"){
+          const i=State.products.findIndex(p=>p.id===d.id);
+          if(i>=0) State.products.splice(i,1);
+        }
+      });
+      if(added.length) State.products.push(...added);
+      if(snap.docs.length) State.page.cursor = snap.docs[snap.docs.length-1];
+      harvestCategories();
+      renderTable();
+    }, e=>{
+      console.error(e);
+      const w=$("#configWarning"); w.style.display="block"; w.textContent = t("warn.indexNeeded");
+    });
+  }catch(e){
+    console.error(e);
+    const w=$("#configWarning"); w.style.display="block"; w.textContent = t("warn.firebaseInitErr");
+  }
+}
+function harvestCategories(){
+  State.categories = new Set(["ALL"]);
+  State.products.forEach(p=>{ if(p.category){ State.categories.add(p.category); } });
+  // update select
+  const catSel = $("#categorySelect");
+  const keep = State.filters.category || "ALL";
+  catSel.innerHTML=""; const opt=document.createElement("option"); opt.value="ALL"; opt.textContent=t("allCategories"); catSel.appendChild(opt);
+  [...State.categories].filter(v=>v!=="ALL").sort().forEach(c=>{ const o=document.createElement("option"); o.value=c; o.textContent=c; catSel.appendChild(o); });
+  catSel.value = keep;
+}
+
+/* ============ Helpers ============ */
+function XAF(v){ try{return "XAF " + (+v||0).toLocaleString();}catch{return "XAF "+(+v||0);} }
+function profitPerUnit(p){ const price=+p.price||0, cost=+p.cost||0; return Math.max(0, price - cost); }
+function marginPct(p){ const price=+p.price||0, cost=+p.cost||0; if(price<=0) return 0; return Math.max(0, (price-cost)/price*100); }
+function statusPill(s){
+  const cls = s==="available"?"s-available": s==="draft"?"s-draft": s==="out_of_stock"?"s-out":"s-discontinued";
+  const txt = s==="available"?t("status_available"): s==="draft"?t("status_draft"): s==="out_of_stock"?t("status_out_of_stock"):t("status_discontinued");
+  return `<span class="pill ${cls}">${txt}</span>`;
+}
+function searchMatch(p, q){
+  if(!q) return true;
+  q=q.toLowerCase();
+  if((p.id||"").toLowerCase().includes(q)) return true;
+  if((p.name||"").toLowerCase().includes(q)) return true;
+  if((p.sku||"").toLowerCase().includes(q)) return true;
+  if((p.category||"").toLowerCase().includes(q)) return true;
+  return false;
+}
+function goProductLink(id){ return `product.html?id=${encodeURIComponent(id||"")}`; }
+function photoURL(p){ return (Array.isArray(p.images)&&p.images[0]) || p.photo || p.image || ""; }
+
+/* ============ Render ============ */
+const bodyEl=$("#productsBody");
+$("#selAll").addEventListener("change",(e)=>{
+  const rows = [...bodyEl.querySelectorAll('tr')];
+  if(e.target.checked){ rows.forEach(tr=> State.selected.add(tr.dataset.id)); }
+  else { State.selected.clear(); }
+  renderTable();
+});
+function toggleBulkBar(){
+  $("#bulkBar").classList.toggle("show", State.selected.size>0);
+  $("#bulkSelCount").innerHTML = `<strong>${State.selected.size}</strong> ${t("bulkSel")}`;
+}
+function renderTable(){
+  // Filters (client side refinements)
+  const q = $("#searchBox").value.trim();
+  const f = State.filters;
+  let list = State.products.slice();
+
+  if(f.category!=="ALL") list = list.filter(p=> p.category===f.category);
+  if(f.onlyInStock) list = list.filter(p=> (+p.stock||0) > 0);
+  if(f.onlyWithPhoto) list = list.filter(p=> !!photoURL(p));
+  if(f.minPrice!=null && $("#minPrice").value!=="") list = list.filter(p=> (+p.price||0)>= +$("#minPrice").value);
+  if(f.maxPrice!=null && $("#maxPrice").value!=="") list = list.filter(p=> (+p.price||0)<= +$("#maxPrice").value);
+  if(f.minMargin!=null && $("#minMargin").value!=="") list = list.filter(p=> marginPct(p) >= +$("#minMargin").value);
+  if(f.minStock!=null && $("#minStock").value!=="") list = list.filter(p=> (+p.stock||0) >= +$("#minStock").value);
+  list = list.filter(p=> searchMatch(p,q));
+
+  // Sort
+  const sort = $("#sortSelect").value;
+  list.sort((a,b)=>{
+    if(sort==="profit_desc") return profitPerUnit(b)-profitPerUnit(a);
+    if(sort==="price_desc")  return (+b.price||0)-(+a.price||0);
+    if(sort==="price_asc")   return (+a.price||0)-(+b.price||0);
+    if(sort==="stock_desc")  return (+b.stock||0)-(+a.stock||0);
+    if(sort==="name_asc")    return (a.name||"").localeCompare(b.name||"");
+    if(sort==="created_desc"){
+      const ta = a.createdAt?.toDate? a.createdAt.toDate().getTime() : (a.createdAt?.seconds? a.createdAt.seconds*1000 : 0);
+      const tb = b.createdAt?.toDate? b.createdAt.toDate().getTime() : (b.createdAt?.seconds? b.createdAt.seconds*1000 : 0);
+      return tb-ta;
+    }
+    return 0;
+  });
+
+  // KPIs
+  $("#kpiCount").textContent = list.length.toLocaleString();
+  $("#kpiAvail").textContent = list.filter(p=>p.status==="available").length.toLocaleString();
+  $("#kpiDraft").textContent = list.filter(p=>p.status==="draft").length.toLocaleString();
+  $("#kpiOut").textContent   = list.filter(p=>p.status==="out_of_stock").length.toLocaleString();
+  $("#kpiDis").textContent   = list.filter(p=>p.status==="discontinued").length.toLocaleString();
+  const top = list.slice().sort((a,b)=> profitPerUnit(b)-profitPerUnit(a))[0];
+  $("#kpiTopName").textContent = top?.name || "—";
+  $("#kpiTopVal").textContent  = XAF(top?profitPerUnit(top):0);
+  const imgTop = $("#kpiTopImg"); imgTop.style.display= top && photoURL(top) ? "block":"none"; imgTop.src = top?photoURL(top):"";
+
+  // Render rows
+  bodyEl.innerHTML = list.map(p=>{
+    const price=+p.price||0, cost=+p.cost||0, stock=+p.stock||0, m=Math.round(marginPct(p));
+    const created = p.createdAt?.toDate ? p.createdAt.toDate() : (p.createdAt?.seconds? new Date(p.createdAt.seconds*1000):null);
+    const link = goProductLink(p.id);
+    const img = photoURL(p);
+    return `<tr data-id="${p.id}">
+      <td><input type="checkbox" class="selRow" ${State.selected.has(p.id)?"checked":""}></td>
+      <td>
+        <a href="${link}" style="display:flex;align-items:center;gap:8px">
+          <img class="thumb" src="${img}" alt="" onerror="this.src=''; this.style.background='#e5e7eb'">
+          <div style="display:flex;flex-direction:column">
+            <strong>${p.name||"—"}</strong>
+            <small class="muted">${p.sku||""}</small>
+          </div>
+        </a>
+      </td>
+      <td>${statusPill(p.status||"draft")}</td>
+      <td>${p.region||"—"}</td>
+      <td>${p.category||"—"}</td>
+      <td class="right">${XAF(price)}</td>
+      <td class="right">${XAF(cost)}</td>
+      <td class="right"><strong>${XAF(profitPerUnit(p))}</strong></td>
+      <td class="right">${m}%</td>
+      <td class="right">${stock}</td>
+      <td>${created? created.toLocaleString():"—"}</td>
+      <td>
+        <a class="btn" href="${link}">${t("table.open")}</a>
+      </td>
+    </tr>`;
+  }).join("");
+
+  // Bind row events
+  $$("#productsBody .selRow").forEach(cb=>{
+    cb.addEventListener("change",(e)=>{
+      const id = e.target.closest("tr").dataset.id;
+      if(e.target.checked) State.selected.add(id); else State.selected.delete(id);
+      toggleBulkBar();
+    });
+  });
+
+  // Update category select options from current data if empty
+  harvestCategories();
+
+  // Update select-all checkbox
+  $("#selAll").checked = (State.selected.size>0 && State.selected.size===list.length);
+  toggleBulkBar();
+}
+
+/* ============ Bulk Actions ============ */
+$("#bulkMarkAvailable").addEventListener("click", ()=> bulkStatus("available"));
+$("#bulkMarkOut").addEventListener("click", ()=> bulkStatus("out_of_stock"));
+$("#bulkMarkDraft").addEventListener("click", ()=> bulkStatus("draft"));
+$("#bulkMarkDis").addEventListener("click", ()=> bulkStatus("discontinued"));
+$("#bulkExport").addEventListener("click", ()=> exportCSV(true));
+
+async function bulkStatus(status){
+  if(State.selected.size===0) return;
+  if(!State.db){ alert("Demo mode"); return; }
+  const ids = [...State.selected];
+  const batch = State.db.batch();
+  ids.forEach(id=>{
+    const ref = State.db.collection("products").doc(id);
+    batch.update(ref, { status });
+  });
+  try{
+    await batch.commit();
+    State.selected.clear(); toggleBulkBar();
+    alert(t("bulk.done"));
+  }catch(e){ console.error(e); alert(t("bulk.fail")); }
+}
+
+/* ============ CSV Export ============ */
+function exportCSV(onlySelected=false){
+  const rows = [["id","name","sku","status","region","category","price_XAF","cost_XAF","netProfit_XAF","margin_pct","stock","createdAt"]];
+  const list = onlySelected ? State.products.filter(p=> State.selected.has(p.id)) : State.products;
+  list.forEach(p=>{
+    const created = p.createdAt?.toDate ? p.createdAt.toDate().toISOString() : (p.createdAt?.seconds? new Date(p.createdAt.seconds*1000).toISOString() : "");
+    rows.push([p.id, p.name||"", p.sku||"", p.status||"", p.region||"", p.category||"", +p.price||0, +p.cost||0, profitPerUnit(p), Math.round(marginPct(p)), +p.stock||0, created]);
+  });
+  const csv = rows.map(r=> r.map(v=> `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"}); const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href=url; a.download = onlySelected?"products_selected.csv":"products.csv"; a.click(); URL.revokeObjectURL(url);
+}
+
+/* ============ Demo Data (no Firebase) ============ */
+function demoProducts(){
+  const sample = [];
+  const cats = ["Phones","Accessories","Appliances","Fashion","Groceries"];
+  const regs = REGIONS.map(r=>r.en);
+  for(let i=1;i<=30;i++){
+    const price = 10000 + Math.round(Math.random()*400000);
+    const cost  = Math.round(price*(0.5 + Math.random()*0.3));
+    const stock = Math.floor(Math.random()*120);
+    const status = ["available","draft","out_of_stock","discontinued"][Math.floor(Math.random()*4)];
+    const region = regs[Math.floor(Math.random()*regs.length)];
+    const category = cats[Math.floor(Math.random()*cats.length)];
+    sample.push({
+      id:"DEMO"+i,
+      name:"Sample Product "+i,
+      sku:"SKU-"+(1000+i),
+      status, region, category,
+      price, cost, stock,
+      images: i%3===0? ["https://picsum.photos/seed/prod"+i+"/200/200"] : [],
+      createdAt: { seconds: Math.floor((Date.now()-Math.random()*60*86400000)/1000) }
+    });
+  }
+  return sample;
+}
+
+/* ============ Wire extra controls ============ */
+$("#exportBtn").addEventListener("click", ()=> exportCSV(false));
+
+/* ============ Boot ============ */
+applyLang();
+</script>
+</body>
+</html>

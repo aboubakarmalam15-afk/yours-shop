@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title data-i18n="title">Owner Portal — Customers</title>
+
+  <!-- System/light/dark colors for address bar -->
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1220">
+
+  <style>
+    :root{
+      --brand:#0f3b66; --accent:#ff9900;
+      --bg:#f6f8fb; --card:#ffffff; --text:#0b1220; --muted:#6b7280; --line:#e5e7eb;
+      --btn:#0f3b66; --btnText:#ffffff; --danger:#d90429; --ok:#10b981; --chip:#eef2ff;
+      --gold:#f59e0b; --silver:#9ca3af; --online:#10b981; --offline:#9aa3b2;
+    }
+    html[data-theme="dark"]{
+      --bg:#0b1220; --card:#111827; --text:#f7f8fd; --muted:#9aa3b2; --line:#1f2937;
+      --btn:#1f3b66; --btnText:#eaf2ff; --chip:#1f2937; --silver:#cbd5e1;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.45}
+
+    .app{min-height:100vh;display:grid;grid-template-rows:auto auto 1fr auto}
+    header{background:var(--card);border-bottom:1px solid var(--line);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--brand),#1a5aa0);box-shadow:0 10px 30px rgba(15,59,102,.25)}
+    .brand h1{margin:0;font-size:1.05rem;color:var(--brand);letter-spacing:.3px}
+
+    .ctrls{display:flex;gap:10px;align-items:center}
+    .icon-btn{border:1px solid var(--line);background:transparent;color:var(--text);height:40px;padding:0 12px;border-radius:10px;cursor:pointer;font-weight:700}
+
+    .toolbar{background:var(--card);border-bottom:1px solid var(--line);padding:12px 18px;display:grid;gap:10px}
+    .tools{display:grid;grid-template-columns:1fr 220px 240px;gap:10px}
+    .tools input[type="search"], .tools select{
+      width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:transparent;color:var(--text)
+    }
+    .tools input:focus, .tools select:focus{outline:3px solid color-mix(in srgb, var(--brand) 30%, transparent)}
+
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{background:var(--chip);border:1px solid var(--line);padding:6px 10px;border-radius:999px;font-size:.9rem;color:var(--brand);font-weight:800}
+
+    main{padding:16px 18px}
+    .status{display:none;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.45);color:var(--ok);padding:10px 12px;border-radius:10px;font-weight:700;margin-bottom:10px}
+    .error{display:none;background:rgba(217,4,41,.1);border:1px solid rgba(217,4,41,.35);color:var(--danger);padding:10px 12px;border-radius:10px;font-weight:700;margin-bottom:10px}
+
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+    .cust{display:flex;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;cursor:pointer;box-shadow:0 10px 40px rgba(0,0,0,.04)}
+    .cust:hover{outline:3px solid color-mix(in srgb, var(--brand) 16%, transparent)}
+    .avatar{position:relative;flex:0 0 56px;width:56px;height:56px;border-radius:14px;overflow:hidden;display:grid;place-items:center;background:linear-gradient(135deg, #c7d2fe, #bfdbfe);color:#111827;font-weight:900}
+    .avatar img{width:100%;height:100%;object-fit:cover;display:block}
+    .dot{position:absolute;bottom:4px;right:4px;width:10px;height:10px;border-radius:50%;border:2px solid var(--card);background:var(--offline)}
+    .dot.online{background:var(--online)}
+
+    .info{min-width:0;display:grid}
+    .info h4{margin:0;font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .info small{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+    .meta{margin-left:auto;text-align:right;display:grid;gap:4px}
+    .amt{font-weight:900}
+    .region{font-size:.9rem;color:var(--muted)}
+
+    .badge{border:2px solid transparent;border-radius:12px}
+    .badge.top1{border-color:var(--gold)}
+    .badge.top2{border-color:var(--silver)}
+    .badge.top3{border-color:var(--silver)}
+
+    .empty{display:none;padding:24px;text-align:center;color:var(--muted)}
+
+    footer{padding:12px 18px;color:var(--muted);text-align:center}
+
+    /* Skeleton loader */
+    .skeleton{animation:pulse 1.4s ease-in-out infinite;background:linear-gradient(90deg, rgba(0,0,0,.06) 25%, rgba(0,0,0,.12) 37%, rgba(0,0,0,.06) 63%);background-size:400% 100%}
+    @keyframes pulse{0%{background-position:100% 0}100%{background-position:-100% 0}}
+    .cust.skel{pointer-events:none}
+    .avatar.skel{border-radius:14px}
+    .text-skel{height:12px;border-radius:6px}
+
+    /* Responsive */
+    @media (max-width: 1024px){
+      .grid{grid-template-columns:repeat(2,1fr)}
+      .tools{grid-template-columns:1fr 1fr;grid-auto-rows:auto}
+      .tools select:last-child{grid-column:1 / -1}
+    }
+    @media (max-width: 640px){
+      header{gap:8px}
+      .brand h1{display:none}
+      .grid{grid-template-columns:1fr}
+      .tools{grid-template-columns:1fr;gap:8px}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- HEADER -->
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <h1 data-i18n="page.title">Customers</h1>
+      </div>
+      <div class="ctrls">
+        <button id="langToggle" class="icon-btn" title="Language">EN</button>
+        <button id="themeToggle" class="icon-btn" title="Theme">🌓</button>
+        <a class="icon-btn" href="index.html" data-i18n="nav.back">Back to Dashboard</a>
+      </div>
+    </header>
+
+    <!-- TOOLBAR -->
+    <section class="toolbar" aria-label="Filters">
+      <div class="tools">
+        <input id="search" type="search" autocomplete="off"
+               placeholder="Search name, email or UID"
+               data-i18n-attr="placeholder" data-i18n-placeholder="search.ph">
+        <select id="region">
+          <option value="all" data-i18n="region.all">All Regions</option>
+          <option>Adamawa</option>
+          <option>Centre</option>
+          <option>East</option>
+          <option>Far North</option>
+          <option>Littoral</option>
+          <option>North</option>
+          <option>North-West</option>
+          <option>West</option>
+          <option>South</option>
+          <option>South-West</option>
+        </select>
+        <select id="performance">
+          <option value="all" data-i18n="perf.all">All Customers</option>
+          <option value="topSpent" data-i18n="perf.topSpent">Top Spenders (All)</option>
+          <option value="mostOrders" data-i18n="perf.mostOrders">Most Orders</option>
+          <option value="lowRefund" data-i18n="perf.lowRefund">Lowest Refund Rate</option>
+          <option value="topByRegion" data-i18n="perf.topByRegion">Top by Region</option>
+          <option value="recent" data-i18n="perf.recent">Recent Customers</option>
+          <option value="inactive" data-i18n="perf.inactive">Inactive (0 orders / high refund)</option>
+        </select>
+      </div>
+      <div class="chips">
+        <span id="chipCount" class="chip" data-i18n="chip.loading">Loading…</span>
+        <span id="chipOwner" class="chip">OWNER</span>
+      </div>
+    </section>
+
+    <!-- MAIN -->
+    <main>
+      <div id="status" class="status">OK</div>
+      <div id="error"  class="error">Error</div>
+
+      <!-- Skeleton while loading -->
+      <div id="skeleton" class="grid" aria-hidden="true">
+        <div class="cust skel">
+          <div class="avatar skel"></div>
+          <div class="info" style="flex:1">
+            <div class="text-skel skeleton" style="width:60%;margin:6px 0"></div>
+            <div class="text-skel skeleton" style="width:40%;margin:6px 0"></div>
+            <div class="text-skel skeleton" style="width:30%;margin:6px 0"></div>
+          </div>
+          <div class="meta" style="width:90px">
+            <div class="text-skel skeleton" style="height:16px"></div>
+            <div class="text-skel skeleton" style="height:12px"></div>
+          </div>
+        </div>
+        <div class="cust skel">
+          <div class="avatar skel"></div>
+          <div class="info" style="flex:1">
+            <div class="text-skel skeleton" style="width:60%;margin:6px 0"></div>
+            <div class="text-skel skeleton" style="width:40%;margin:6px 0"></div>
+            <div class="text-skel skeleton" style="width:30%;margin:6px 0"></div>
+          </div>
+          <div class="meta" style="width:90px">
+            <div class="text-skel skeleton" style="height:16px"></div>
+            <div class="text-skel skeleton" style="height:12px"></div>
+          </div>
+        </div>
+        <div class="cust skel">
+          <div class="avatar skel"></div>
+          <div class="info" style="flex:1">
+            <div class="text-skel skeleton" style="width:60%;margin:6px 0"></div>
+            <div class="text-skel skeleton" style="width:40%;margin:6px 0"></div>
+            <div class="text-skel skeleton" style="width:30%;margin:6px 0"></div>
+          </div>
+          <div class="meta" style="width:90px">
+            <div class="text-skel skeleton" style="height:16px"></div>
+            <div class="text-skel skeleton" style="height:12px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div id="list" class="grid" role="list"></div>
+      <div id="empty" class="empty" data-i18n="empty">No customers match your filters.</div>
+    </main>
+
+    <footer><small class="note">&copy; <span id="year"></span> Owner Portal</small></footer>
+  </div>
+
+  <!-- Optional: invisible container for reCAPTCHA if you later add phone actions here -->
+  <div id="recaptcha-container" style="position:fixed;left:-9999px;top:-9999px;"></div>
+
+  <script type="module">
+    /* ================== Firebase ================== */
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import {
+      getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, signOut
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import {
+      getFirestore, collection, query, where, onSnapshot, doc, getDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+    // === Your Firebase project (same as your other pages)
+    const firebaseConfig = {
+      apiKey: "AIzaSyCz446b_SZF8L1HykjAeHrc9LK9GVWX4Q4",
+      authDomain: "your-shop-3bdd1.firebaseapp.com",
+      projectId: "your-shop-3bdd1",
+      storageBucket: "your-shop-3bdd1.appspot.com",
+      messagingSenderId: "440558238881",
+      appId: "1:440558238881:web:b1594dc8a4bfd9089dc4e0"
+    };
+
+    /* ================== Cloudinary (optional-use) ================== */
+    const CLOUDINARY_CLOUD_NAME = "divjjbwit";
+    const CLOUDINARY_UNSIGNED_PRESET = "unsigned_yours_shop";
+
+    /* =============== DOM helpers & State =============== */
+    const $ = (s)=>document.querySelector(s);
+    const $$ = (s)=>document.querySelectorAll(s);
+
+    const State = {
+      lang: localStorage.getItem("lang") || (navigator.language?.startsWith("fr") ? "fr" : "en"),
+      theme: localStorage.getItem("theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"),
+      firebaseReady: false,
+      loaded: false,
+      user: null,
+      owner: false,
+      customers: [],
+      filtered: [],
+      search: "",
+      region: "all",
+      performance: "all",
+      onlineMap: {}
+    };
+
+    /* =============== i18n =============== */
+    const I18N = {
+      en:{ "title":"Owner Portal — Customers","page.title":"Customers","nav.back":"Back to Dashboard","search.ph":"Search name, email or UID","region.all":"All Regions","perf.all":"All Customers","perf.topSpent":"Top Spenders (All)","perf.mostOrders":"Most Orders","perf.lowRefund":"Lowest Refund Rate","perf.topByRegion":"Top by Region","perf.recent":"Recent Customers","perf.inactive":"Inactive (0 orders / high refund)","chip.loading":"Loading…","chip.count":"{count} customers","chip.owner":"OWNER","empty":"No customers match your filters.","err.noauth":"You must be signed in. Redirecting to login…","err.notowner":"Access restricted to Owner. Redirecting to login…","err.verify":"Email not verified. Redirecting to login…","err.load":"Could not load customers.","money":"XAF"},
+      fr:{ "title":"Portail Propriétaire — Clients","page.title":"Clients","nav.back":"Retour au tableau de bord","search.ph":"Rechercher nom, e-mail ou UID","region.all":"Toutes les régions","perf.all":"Tous les clients","perf.topSpent":"Meilleurs dépensiers (Tous)","perf.mostOrders":"Plus de commandes","perf.lowRefund":"Plus faible taux de remboursement","perf.topByRegion":"Top par région","perf.recent":"Clients récents","perf.inactive":"Inactifs (0 commande / taux élevé)","chip.loading":"Chargement…","chip.count":"{count} clients","chip.owner":"PROPRIÉTAIRE","empty":"Aucun client ne correspond à vos filtres.","err.noauth":"Vous devez être connecté. Redirection vers la connexion…","err.notowner":"Accès réservé au Propriétaire. Redirection vers la connexion…","err.verify":"E-mail non vérifié. Redirection vers la connexion…","err.load":"Impossible de charger les clients.","money":"XAF"}
+    };
+    const t=(k, vars={})=>{
+      const s=(I18N[State.lang][k]||k);
+      return s.replace(/\{(\w+)\}/g, (_,m)=> (vars[m]??""));
+    };
+    function applyLang(){
+      document.documentElement.setAttribute("lang", State.lang);
+      document.title = t("title");
+      $$("#nav span[data-i18n], [data-i18n]").forEach(el=>{
+        const key = el.getAttribute("data-i18n"); if(key) el.textContent = t(key);
+      });
+      document.querySelectorAll("[data-i18n-attr]").forEach(el=>{
+        const attrs = el.getAttribute("data-i18n-attr").split(",").map(s=>s.trim());
+        attrs.forEach(a=>{
+          const key = el.getAttribute(`data-i18n-${a}`);
+          if(key) el.setAttribute(a, t(key));
+        });
+      });
+      $("#langToggle").textContent = State.lang.toUpperCase();
+      refreshChips();
+    }
+    function applyTheme(){
+      document.documentElement.setAttribute("data-theme", State.theme);
+      document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{
+        m.setAttribute("content", State.theme==="dark" ? "#0b1220" : "#ffffff");
+      });
+      const btn=$("#themeToggle"); if(btn){ btn.textContent="🌓"; btn.title=`Theme: ${State.theme}`; }
+    }
+
+    /* =============== Utils =============== */
+    const fmtXAF = (n=0)=> new Intl.NumberFormat(State.lang==="fr"?"fr-FR":"en-US", {style:"currency",currency:"XAF",maximumFractionDigits:0}).format(n||0);
+    const initials = (name="")=>{
+      const parts = name.trim().split(/\s+/).slice(0,2);
+      return parts.map(p=>p[0]?.toUpperCase()||"").join("");
+    };
+    const safe = (v, d="—")=> (v===undefined||v===null||v===""?d:v);
+
+    function refreshChips(){
+      const count = State.filtered.length || (State.loaded?0:"");
+      $("#chipCount").textContent = State.loaded ? t("chip.count",{count}) : t("chip.loading");
+      $("#chipOwner").textContent = State.lang==="fr" ? "PROPRIÉTAIRE" : "OWNER";
+    }
+
+    function showError(msg){ const el=$("#error"); el.textContent=msg; el.style.display="block"; $("#status").style.display="none"; }
+    function showStatus(msg){ const el=$("#status"); el.textContent=msg; el.style.display="block"; $("#error").style.display="none"; }
+    function clearAlerts(){ $("#status").style.display="none"; $("#error").style.display="none"; }
+
+    /* ===== Cloudinary helpers (display only) ===== */
+    function cloudinaryUrl(publicId, {cloud=CLOUDINARY_CLOUD_NAME, w=112, h=112}={}){
+      if(!cloud || !publicId) return "";
+      const pid = String(publicId).replace(/^image\/upload\/?/,"").replace(/^v\d+\//,"");
+      return `https://res.cloudinary.com/${cloud}/image/upload/c_fill,g_face:auto,f_auto,q_auto,w_${w},h_${h}/${encodeURIComponent(pid)}`;
+    }
+    function pickAvatarUrl(c){
+      const pid = c.avatarPublicId || c.cloudinaryPublicId || c.avatar_id || null;
+      const cloud = c.cloudinaryCloud || CLOUDINARY_CLOUD_NAME || "";
+      if(pid && cloud) return cloudinaryUrl(pid, {cloud, w:112, h:112});
+      if(typeof c.avatar === "string" && c.avatar) return c.avatar;
+      if(typeof c.photoURL === "string" && c.photoURL) return c.photoURL;
+      return "";
+    }
+
+    function applyFilters(){
+      const q = State.search.toLowerCase();
+      let arr = [...State.customers];
+
+      if(q){
+        arr = arr.filter(c=>
+          (c.name||"").toLowerCase().includes(q) ||
+          (c.email||"").toLowerCase().includes(q) ||
+          (c.uid||"").toLowerCase().includes(q)
+        );
+      }
+      if(State.region !== "all"){
+        arr = arr.filter(c=> (c.region||"").toLowerCase() === State.region.toLowerCase());
+      }
+
+      const gs = (c)=> (c.stats||{});
+      switch(State.performance){
+        case "topSpent":   arr.sort((a,b)=>(gs(b).totalSpent||0)-(gs(a).totalSpent||0)); break;
+        case "mostOrders": arr.sort((a,b)=>(gs(b).totalOrders||0)-(gs(a).totalOrders||0)); break;
+        case "lowRefund":  arr.sort((a,b)=>(gs(a).refundRate??100)-(gs(b).refundRate??100)); break;
+        case "topByRegion":{
+          const byR = {};
+          for(const c of arr){
+            const r=(c.region||"unknown").toLowerCase();
+            if(!byR[r] || (gs(c).totalSpent||0)>(gs(byR[r]).totalSpent||0)) byR[r]=c;
+          }
+          arr = Object.values(byR);
+          arr.sort((a,b)=>(gs(b).totalSpent||0)-(gs(a).totalSpent||0));
+          break;
+        }
+        case "recent":     arr.sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0)); break;
+        case "inactive":   arr = arr.filter(c=>(gs(c).totalOrders||0)===0 || (gs(c).refundRate||0)>=20); break;
+        default: break;
+      }
+
+      const sortedSpent = [...arr].sort((a,b)=>(gs(b).totalSpent||0)-(gs(a).totalSpent||0));
+      const topIds = new Set(sortedSpent.slice(0,3).map(c=>c.uid));
+      arr.forEach(c=> c._badge = topIds.has(c.uid) ? ("top"+(sortedSpent.findIndex(x=>x.uid===c.uid)+1)) : "");
+
+      State.filtered = arr;
+      renderList();
+      refreshChips();
+    }
+
+    function renderList(){
+      const list = $("#list");
+      const empty = $("#empty");
+      list.innerHTML = "";
+
+      if(!State.loaded){
+        $("#skeleton").style.display="grid";
+        empty.style.display="none";
+        return;
+      }else{
+        $("#skeleton").style.display="none";
+      }
+
+      if(State.filtered.length===0){
+        empty.style.display="block";
+        return;
+      }
+      empty.style.display="none";
+
+      const frag = document.createDocumentFragment();
+      for(const c of State.filtered){
+        const li = document.createElement("div");
+        li.className = "cust badge " + (c._badge||"");
+        li.setAttribute("role","listitem");
+        li.title = (State.lang==="fr" ? "Ouvrir le profil" : "Open profile");
+
+        const av = document.createElement("div");
+        av.className = "avatar";
+        const avatarSrc = pickAvatarUrl(c);
+        if(avatarSrc){
+          const img = new Image();
+          img.src = avatarSrc;
+          img.alt = (State.lang==="fr" ? "Avatar de " : "Avatar of ") + (c.name||"—");
+          av.appendChild(img);
+        }else{
+          av.textContent = initials(c.name||c.email||"");
+        }
+        const dot = document.createElement("span");
+        dot.className = "dot" + (State.onlineMap[c.uid] ? " online":"");
+        av.appendChild(dot);
+
+        const info = document.createElement("div");
+        info.className = "info";
+        const h4 = document.createElement("h4"); h4.textContent = safe(c.name, c.email||c.uid);
+        const sm1 = document.createElement("small"); sm1.textContent = safe(c.email,"—");
+        const sm2 = document.createElement("small"); sm2.textContent = safe(c.uid,"—");
+        info.append(h4, sm1, sm2);
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        const amt = document.createElement("div");
+        amt.className="amt";
+        // Show WALLET BALANCE first; fallback to totalSpent if not yet loaded
+        amt.textContent = fmtXAF( (typeof c.walletBalance === "number") ? c.walletBalance : (c.stats?.totalSpent || 0) );
+        const reg = document.createElement("div"); reg.className="region"; reg.textContent = safe(c.region,"—");
+        meta.append(amt, reg);
+
+        li.append(av, info, meta);
+        li.addEventListener("click", ()=> location.href = `customer-dashboard.html?uid=${encodeURIComponent(c.uid)}`);
+        frag.appendChild(li);
+      }
+      list.appendChild(frag);
+    }
+
+    /* =============== UI init =============== */
+    function initUI(){
+      $("#year").textContent = new Date().getFullYear();
+      $("#langToggle").addEventListener("click", ()=>{ State.lang=State.lang==="en"?"fr":"en"; localStorage.setItem("lang",State.lang); applyLang(); renderList(); });
+      $("#themeToggle").addEventListener("click", ()=>{ State.theme=State.theme==="light"?"dark":"light"; localStorage.setItem("theme",State.theme); applyTheme(); });
+      $("#search").addEventListener("input", (e)=>{ State.search=e.target.value; applyFilters(); });
+      $("#region").addEventListener("change", (e)=>{ State.region=e.target.value; applyFilters(); });
+      $("#performance").addEventListener("change", (e)=>{ State.performance=e.target.value; applyFilters(); });
+      applyLang(); applyTheme();
+    }
+
+    /* =============== Firebase guard + data =============== */
+    let app, auth, db, unsub;
+    try{
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db   = getFirestore(app);
+      await setPersistence(auth, browserLocalPersistence);
+      auth.useDeviceLanguage && auth.useDeviceLanguage();
+      State.firebaseReady = true;
+    }catch(e){
+      console.error(e);
+      showError("Firebase init error.");
+    }
+
+    async function isOwner(uid){
+      try{
+        const snap = await getDoc(doc(db,"users",uid));
+        return snap.exists() && snap.data().role === "owner";
+      }catch(_){ return false; }
+    }
+
+    // Prefer existing "META/wallet" then "meta/wallet", fallback to "META/wallet"
+    async function getWalletRefPreferred(uid){
+      const refUpper = doc(db,"users",uid,"META","wallet");
+      const refLower = doc(db,"users",uid,"meta","wallet");
+      try{
+        const up = await getDoc(refUpper);
+        if(up.exists()) return refUpper;
+        const lo = await getDoc(refLower);
+        if(lo.exists()) return refLower;
+      }catch(_){}
+      return refUpper;
+    }
+    async function fetchWalletBalance(uid){
+      try{
+        const ref = await getWalletRefPreferred(uid);
+        const snap = await getDoc(ref);
+        return snap.exists()? (snap.data().balance||0) : 0;
+      }catch(_){ return 0; }
+    }
+
+    async function enrichBalances(list){
+      // fetch balances in parallel, then refresh the list to show WALLET balances
+      try{
+        await Promise.all(list.map(async c=>{
+          c.walletBalance = await fetchWalletBalance(c.uid);
+        }));
+        applyFilters();
+      }catch(e){
+        console.warn("wallet enrich error", e);
+      }
+    }
+
+    function startCustomersListener(){
+      if(unsub) unsub();
+      const q = query(collection(db,"users"), where("role","==","customer"));
+      unsub = onSnapshot(q, (snap)=>{
+        const arr = [];
+        snap.forEach(d=>{
+          const data = d.data();
+          arr.push({
+            uid: d.id,
+            name: data.name || "",
+            email: data.email || "",
+            region: data.region || "",
+            avatar: data.avatar || "",
+            photoURL: data.photoURL || "",
+            avatarPublicId: data.avatarPublicId || data.cloudinaryPublicId || data.avatar_id || "",
+            cloudinaryCloud: data.cloudinaryCloud || "",
+            createdAt: data.createdAt || null,
+            walletBalance: undefined, // will be filled asynchronously
+            stats: {
+              totalSpent: data?.stats?.totalSpent ?? 0,
+              totalOrders: data?.stats?.totalOrders ?? 0,
+              refundRate: data?.stats?.refundRate ?? 0
+            }
+          });
+        });
+        State.customers = arr;
+        State.loaded = true;
+        clearAlerts();
+        applyFilters();          // quick paint
+        enrichBalances(arr);     // then replace amt with WALLET balance
+      }, (err)=>{
+        console.error(err);
+        // Only change: show the actual Firestore error code/message for diagnosis.
+        showError(t("err.load") + (err?.code ? `: ${err.code}` : (err?.message ? `: ${err.message}` : "")));
+      });
+    }
+
+    onAuthStateChanged(auth, async (u)=>{
+      if(!u){
+        showError(t("err.noauth"));
+        setTimeout(()=>location.assign("login.html?next=customer.html"), 900);
+        return;
+      }
+      if(!u.emailVerified){
+        showError(t("err.verify"));
+        setTimeout(async ()=>{
+          try{ await signOut(auth); }catch(_){}
+          location.assign("login.html?next=customer.html");
+        }, 900);
+        return;
+      }
+      const owner = await isOwner(u.uid);
+      if(!owner){
+        showError(t("err.notowner"));
+        setTimeout(async ()=>{
+          try{ await signOut(auth); }catch(_){}
+          location.assign("login.html?next=customer.html");
+        }, 900);
+        return;
+      }
+      State.user = u; State.owner = true;
+      startCustomersListener();
+    });
+
+    initUI();
+  </script>
+
+  <!-- ✅ Unified, accurate "Customer Online" counter -->
+  <script>
+  (function customerOnlineKPI(){
+    const RTDB_URL = "https://your-shop-3bdd1-default-rtdb.firebaseio.com";
+    const STALE_MS = 2 * 60 * 1000; // 2 minutes
+    const el = document.getElementById("kpiCustomers");
+    if (el) el.textContent = "0"; // default
+
+    const onlineSets = { rtdb: new Set(), mirror: new Set() };
+    const roleCache = new Map(); // uid -> role
+
+    function setText(n){
+      if (!el) return;
+      el.textContent = String(n);
+    }
+
+    async function getRole(uid){
+      if (roleCache.has(uid)) return roleCache.get(uid);
+      try{
+        const d = await (window.db || firebase.firestore()).collection("users").doc(uid).get();
+        const role = d.exists ? (d.get("role") || null) : null;
+        roleCache.set(uid, role);
+        return role;
+      }catch(e){
+        roleCache.set(uid, null);
+        return null;
+      }
+    }
+
+    function recompute(){
+      const union = new Set([...onlineSets.rtdb, ...onlineSets.mirror]);
+      setText(union.size);
+    }
+
+    // Watch Realtime Database /status
+    try{
+      const rtdb = firebase.database(RTDB_URL);
+      const statusRef = rtdb.ref("status");
+      statusRef.on("value", async (snap)=>{
+        const data = snap.val() || {};
+        const now = Date.now();
+        const candidates = Object.keys(data).filter(uid=>{
+          const s = data[uid] || {};
+          const online = (s.state === "online") || (s.online === true) || (s.state === true);
+          const lastMs = (typeof s.last_changed === "number")
+            ? s.last_changed
+            : (s.last_changed && s.last_changed.seconds ? s.last_changed.seconds*1000 : now);
+          return online && (now - lastMs) <= STALE_MS;
+        });
+
+        const out = new Set();
+        await Promise.all(candidates.map(async uid=>{
+          const role = await getRole(uid);
+          if (role === "customer") out.add(uid);
+        }));
+        onlineSets.rtdb = out;
+        recompute();
+      }, err => console.warn("RTDB status read error:", err));
+    }catch(e){ console.warn("RTDB init error:", e); }
+
+    // Watch Firestore presence mirror
+    try{
+      const fs = window.db || firebase.firestore();
+      fs.collection("presence").where("online","==",true).onSnapshot(async (qs)=>{
+        const now = Date.now();
+        const candidates = [];
+        qs.forEach(doc=>{
+          const d = doc.data() || {};
+          let lastMs = 0;
+          try{
+            if (d.lastSeen && d.lastSeen.toDate) lastMs = d.lastSeen.toDate().getTime();
+            else if (typeof d.lastSeen === "number") lastMs = d.lastSeen;
+            else if (d.lastSeen && d.lastSeen.seconds) lastMs = d.lastSeen.seconds*1000;
+          }catch(_){}
+          if ((now - lastMs) <= STALE_MS) candidates.push(doc.id);
+        });
+
+        const out = new Set();
+        await Promise.all(candidates.map(async uid=>{
+          const role = await getRole(uid);
+          if (role === "customer") out.add(uid);
+        }));
+        onlineSets.mirror = out;
+        recompute();
+      }, err => console.warn("Presence mirror read error:", err));
+    }catch(e){ console.warn("Presence mirror init error:", e); }
+
+    // Guard against any other script accidentally rewriting the KPI
+    const mo = new MutationObserver(()=>{
+      const expected = String(new Set([...onlineSets.rtdb, ...onlineSets.mirror]).size);
+      if (el && el.textContent !== expected) setText(expected);
+    });
+    if (el) mo.observe(el, { childList:true, characterData:true, subtree:true });
+
+    // Periodic cleanup in case of stale data without new events
+    setInterval(recompute, 60000);
+  })();
+  </script>
+</body>
+</html>

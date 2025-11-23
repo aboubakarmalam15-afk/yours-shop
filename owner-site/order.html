@@ -1,0 +1,1409 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Owner — Orders</title>
+
+  <!-- Perfect light/dark on mobile -->
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1220">
+
+  <style>
+    :root{
+      --brand:#0f3b66; --accent:#ff9900;
+      --bg:#f6f8fb; --card:#ffffff; --text:#0b1220; --muted:#6b7280; --line:#e5e7eb;
+      --ok:#10b981; --warn:#f59e0b; --danger:#ef4444;
+      --sidebar:#0f3b66; --sidebarText:#eaf2ff; --sidebarActive:#ff9900;
+      --shadow:0 10px 30px rgba(0,0,0,.08);
+    }
+    html[data-theme="dark"]{
+      --bg:#0b1220; --card:#111827; --text:#f7f8fd; --muted:#9aa3b2; --line:#1f2937;
+      --sidebar:#0b1220; --sidebarText:#eaf2ff; --sidebarActive:#ff9900;
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    a{color:var(--brand);text-decoration:none}
+    .muted{color:var(--muted)}
+
+    /* Layout */
+    .layout{min-height:100vh;display:grid;grid-template-columns:260px 1fr}
+    @media (max-width: 880px){ .layout{grid-template-columns:1fr} }
+
+    /* Sidebar */
+    .side{
+      position:sticky;top:0;height:100vh;background:var(--sidebar);color:var(--sidebarText);
+      display:flex;flex-direction:column;gap:8px;padding:14px 12px;border-right:1px solid rgba(255,255,255,.08)
+    }
+    @media (max-width: 880px){
+      .side{position:fixed;inset:0 auto 0 0;width:84%;max-width:320px;left:-100%;transition:left .25s;z-index:30}
+      .side.open{left:0}
+    }
+    .brand{display:flex;align-items:center;gap:10px;padding:6px 8px}
+    .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--brand),#1a5aa0)}
+    .brand strong{letter-spacing:.3px}
+    nav{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+    .nav-item{
+      display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;color:var(--sidebarText);
+      text-decoration:none;border:1px solid transparent
+    }
+    .nav-item:hover{background:rgba(255,255,255,.06)}
+    .nav-item.active{background:rgba(255,153,0,.18);border-color:rgba(255,153,0,.4);color:#fff}
+    .nav-item svg{width:18px;height:18px;flex:0 0 auto}
+    .spacer{flex:1}
+    .side-controls{display:flex;gap:8px}
+    .ctrl{
+      border:1px solid rgba(255,255,255,.25);background:transparent;color:var(--sidebarText);
+      height:36px;padding:0 10px;border-radius:10px;cursor:pointer;font-weight:700
+    }
+
+    /* Content */
+    .content{display:flex;flex-direction:column;min-width:0}
+    header.top{
+      position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--line);
+      display:flex;align-items:center;justify-content:space-between;padding:10px 14px
+    }
+    .welcome{font-weight:900;letter-spacing:.4px;margin:0;text-transform:uppercase;font-size:clamp(1rem,2.8vw,1.4rem)}
+    .top-controls{display:flex;align-items:center;gap:8px}
+    .icon-btn{border:1px solid var(--line);background:transparent;color:var(--text);height:36px;padding:0 10px;border-radius:10px;cursor:pointer;font-weight:700}
+    .danger-btn{border-color:rgba(239,68,68,.45);color:var(--danger)}
+    #backdrop{display:none}
+    @media (max-width: 880px){
+      #backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:25}
+      #backdrop.show{display:block}
+    }
+
+    /* Filters */
+    .filters{
+      display:grid;grid-template-columns:repeat(6, minmax(140px,1fr));gap:10px;padding:12px 14px
+    }
+    @media (max-width: 1200px){ .filters{grid-template-columns:repeat(3, minmax(160px,1fr))} }
+    @media (max-width: 640px){ .filters{grid-template-columns:1fr} }
+    select, input[type="date"], input[type="search"]{
+      width:100%;height:38px;border:1px solid var(--line);background:var(--card);color:var(--text);
+      border-radius:10px;padding:6px 10px
+    }
+    .chips{display:flex;gap:8px;flex-wrap:wrap}
+    .chip{border:1px solid var(--line);background:transparent;color:var(--text);height:30px;padding:0 8px;border-radius:999px;cursor:pointer;font-weight:700;font-size:.9rem}
+    .chip.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+    .btn{border:1px solid var(--line);background:transparent;color:var(--text);height:32px;padding:0 10px;border-radius:8px;cursor:pointer;font-weight:700}
+    .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+    .btn.warn{border-color:rgba(245,158,11,.55);color:var(--warn)}
+    .btn.ok{border-color:rgba(16,185,129,.5);color:var(--ok)}
+    .btn.danger{border-color:rgba(239,68,68,.45);color:var(--danger)}
+
+    /* KPIs */
+    .kpis{padding:0 14px 8px;display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+    @media (max-width: 1280px){ .kpis{grid-template-columns:repeat(3,1fr)} }
+    @media (max-width: 640px){ .kpis{grid-template-columns:repeat(2,1fr)} }
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;box-shadow:var(--shadow)}
+    .k{font-size:.9rem;color:var(--muted);margin:0 0 4px}
+    .v{font-size:1.3rem;font-weight:800;margin:0}
+
+    /* Bulk bar */
+    .bulkbar{
+      display:none;align-items:center;justify-content:space-between;gap:10px;margin:0 14px 8px;padding:8px 10px;
+      border:1px solid var(--line);border-radius:12px;background:var(--card);box-shadow:var(--shadow)
+    }
+    .bulkbar.show{display:flex}
+    .bulk-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+    /* Table */
+    .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;margin:0 14px 16px;box-shadow:var(--shadow);overflow:hidden}
+    .panel h3{margin:10px 12px;font-size:1.02rem;display:flex;align-items:center;justify-content:space-between}
+    .table{width:100%;border-collapse:collapse}
+    .table th,.table td{border-bottom:1px solid var(--line);padding:10px 8px;text-align:left}
+    .table th{position:sticky;top:0;background:var(--card);z-index:1}
+    .table tr:hover td{background:rgba(127,127,127,.06)}
+    .pill{display:inline-block;padding:4px 8px;border-radius:999px;font-size:.8rem;font-weight:800}
+    .s-verify{background:#fef3c7;color:#92400e}
+    .s-pending{background:#e0f2fe;color:#075985}
+    .s-packed{background:#ede9fe;color:#5b21b6}
+    .s-intransit{background:#d1fae5;color:#065f46}
+    .s-delivered{background:#dcfce7;color:#166534}
+    .s-declined{background:#fee2e2;color:#991b1b}
+    .s-cancelled{background:#f3f4f6;color:#111827}
+
+    .tag{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;background:rgba(127,127,127,.12);border:1px solid var(--line);font-size:.8rem}
+
+    /* Drawer */
+    .drawer{position:fixed;inset:0 0 0 auto;width:min(860px,100%);max-width:100vw;background:var(--card);border-left:1px solid var(--line);transform:translateX(100%);transition:transform .25s;z-index:50;display:flex;flex-direction:column}
+    .drawer.show{transform:translateX(0)}
+    .drawer-head{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--card);z-index:1}
+    .drawer-body{padding:12px;overflow:auto}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    @media (max-width: 860px){ .grid-2{grid-template-columns:1fr} }
+    .block{border:1px solid var(--line);border-radius:12px;padding:10px}
+    .block h4{margin:0 0 8px;font-size:1rem}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .field{display:grid;gap:6px;margin-bottom:8px}
+    .field label{font-weight:800;font-size:.9rem}
+    .field input, .field textarea, .field select{
+      width:100%;border:1px solid var(--line);background:transparent;color:var(--text);border-radius:10px;padding:8px 10px
+    }
+    .drawer-foot{position:sticky;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;padding:10px 12px}
+
+    .warnbox{
+      display:none;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35);
+      color:var(--danger);padding:10px 12px;border-radius:10px;margin:10px 14px;font-weight:600
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <!-- ===== Sidebar ===== -->
+  <aside class="side" id="sidebar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"></div>
+      <strong>OWNER</strong>
+    </div>
+    <nav>
+      <a href="index.html" class="nav-item" title="Dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 10l9-7 9 7v10a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2V14H8v6a2 2 0 0 1-2 2H3z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <a href="order.html" class="nav-item active" title="Orders">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M16 14h4v-4h-5z"/></svg>
+        <span>Orders</span>
+      </a>
+      <a href="message.html" class="nav-item" title="Messaging">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
+        <span>Messaging</span>
+      </a>
+      <a href="wallet.html" class="nav-item" title="Wallet">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <rect x="3" y="6" width="18" height="12" rx="2" stroke-width="2"/>
+          <path d="M15 12h6v-4h-6z" stroke-width="2"/>
+          <path d="M5 8h9" stroke-width="2"/>
+        </svg>
+        <span>Wallet</span>
+      </a>
+    </nav>
+    <div class="spacer"></div>
+    <div class="side-controls">
+      <button id="sideLang" class="ctrl">EN</button>
+      <button id="sideTheme" class="ctrl">🌓</button>
+    </div>
+  </aside>
+
+  <!-- Backdrop for mobile sidebar -->
+  <div id="backdrop"></div>
+
+  <!-- ===== Content ===== -->
+  <main class="content">
+    <header class="top">
+      <h2 class="welcome" id="greet">ORDERS — OWNER</h2>
+      <div class="top-controls">
+        <button id="menuBtn" class="icon-btn" title="Menu">☰</button>
+        <button id="langToggle" class="icon-btn" title="Language">EN</button>
+        <button id="themeToggle" class="icon-btn" title="Theme">🌓</button>
+        <button id="signOutBtn" class="icon-btn danger-btn">Sign out</button>
+      </div>
+    </header>
+
+    <div id="configWarning" class="warnbox" role="alert"></div>
+
+    <!-- Filters -->
+    <section class="filters">
+      <select id="regionSelect" aria-label="Region"></select>
+      <select id="statusSelect" aria-label="Status">
+        <option value="ALL">All Statuses</option>
+        <option value="under_verification">Under Verification</option>
+        <option value="pending">Pending</option>
+        <option value="packed">Packed</option>
+        <option value="intransit">In Transit</option>
+        <option value="delivered">Delivered</option>
+        <option value="declined">Declined</option>
+        <option value="cancelled">Cancelled</option>
+      </select>
+      <select id="paySelect" aria-label="Payment">
+        <option value="ALL">All Payment</option>
+        <option value="ussd">USSD</option>
+        <option value="wallet">Wallet</option>
+        <option value="cash_on_delivery">Cash on Delivery</option>
+      </select>
+      <input id="searchBox" type="search" placeholder="Search ID, customer, phone, email…" />
+      <input id="fromDate" type="date" aria-label="From">
+      <input id="toDate"   type="date" aria-label="To">
+      <div class="chips" style="grid-column:1/-1">
+        <button class="chip active" data-period="today">Today</button>
+        <button class="chip" data-period="week">This Week</button>
+        <button class="chip" data-period="month">This Month</button>
+        <button class="chip" data-period="year">This Year</button>
+        <button class="chip" data-period="custom">Custom</button>
+        <span class="spacer"></span>
+        <button id="refreshBtn" class="btn">↻ Refresh</button>
+        <button id="printPendingBtn" class="btn">Print Pending</button>
+        <button id="exportBtn" class="btn">Export CSV</button>
+        <label class="tag"><input type="checkbox" id="autoRefresh" /> Auto refresh</label>
+      </div>
+    </section>
+
+    <!-- KPIs -->
+    <section class="kpis">
+      <article class="card"><p class="k">Orders (Filtered)</p><p id="kpiCount" class="v">0</p></article>
+      <article class="card"><p class="k">Under Verification</p><p id="kpiUV" class="v warn">0</p></article>
+      <article class="card"><p class="k">Pending</p><p id="kpiP" class="v">0</p></article>
+      <article class="card"><p class="k">In Transit</p><p id="kpiIT" class="v">0</p></article>
+      <article class="card"><p class="k">Delivered (XAF)</p><p id="kpiDelivered" class="v ok">XAF 0</p></article>
+      <article class="card"><p class="k">Avg Order Value</p><p id="kpiAOV" class="v">XAF 0</p></article>
+    </section>
+
+    <!-- Bulk bar -->
+    <div id="bulkBar" class="bulkbar">
+      <div id="bulkSelCount"><strong>0</strong> selected</div>
+      <div class="bulk-actions">
+        <button class="btn ok" id="bulkApprove">Approve</button>
+        <button class="btn warn" id="bulkPacked">Mark Packed</button>
+        <button class="btn ok" id="bulkInTransit">Mark In Transit</button>
+        <button class="btn ok" id="bulkDelivered">Mark Delivered</button>
+        <button class="btn danger" id="bulkDecline">Decline</button>
+        <button class="btn" id="bulkExport">Export</button>
+      </div>
+    </div>
+
+    <!-- Orders table -->
+    <section class="panel">
+      <h3>
+        <span>Orders</span>
+        <span>
+          <button class="btn" id="loadMoreBtn">Load more</button>
+        </span>
+      </h3>
+      <div style="overflow:auto">
+        <table class="table" id="ordersTable">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="selAll"></th>
+              <th>Order</th>
+              <th>Status</th>
+              <th>Customer</th>
+              <th>Seller</th>
+              <th>Region</th>
+              <th>Payment</th>
+              <th>Items</th>
+              <th>Total</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="ordersBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer><small>&copy; <span id="year"></span> Owner Portal</small></footer>
+  </main>
+</div>
+
+<!-- Drawer (Order Details) -->
+<aside class="drawer" id="drawer">
+  <div class="drawer-head">
+    <strong id="drawerTitle">Order</strong>
+    <div class="row">
+      <button class="btn" id="printInvoiceBtn">Print Invoice</button>
+      <button class="btn" id="printPackingBtn">Packing Slip</button>
+      <button class="btn danger" id="drawerClose">✕</button>
+    </div>
+  </div>
+  <div class="drawer-body">
+    <div class="grid-2">
+      <div class="block">
+        <h4>Order Summary</h4>
+        <div class="row" style="gap:6px;margin-bottom:8px" id="orderTags"></div>
+        <div id="orderMoney"></div>
+      </div>
+      <div class="block">
+        <h4>Status & Verification</h4>
+        <div class="row" style="gap:8px;margin-bottom:8px">
+          <span id="statusPill" class="pill s-pending">pending</span>
+          <button class="btn ok" id="actApprove" title="Approve under verification">Approve</button>
+          <button class="btn warn" id="actNext" title="Move to next status">Next Status</button>
+          <button class="btn danger" id="actDecline" title="Decline with reason">Decline</button>
+        </div>
+        <div class="field">
+          <label>Verification notes (private)</label>
+          <textarea id="verifyNote" placeholder="Add a note visible to staff only…"></textarea>
+        </div>
+        <div class="row">
+          <button class="btn" id="saveVerifyNote">Save note</button>
+          <button class="btn" id="uploadProofBtn">Upload proof</button>
+        </div>
+        <div id="proofsList" style="margin-top:6px"></div>
+      </div>
+      <div class="block">
+        <h4>Customer</h4>
+        <div id="custBlock"></div>
+      </div>
+      <div class="block">
+        <h4>Payment</h4>
+        <div class="field">
+          <label>Method</label>
+          <select id="payMethod">
+            <option value="">—</option>
+            <option value="ussd">USSD</option>
+            <option value="wallet">Wallet</option>
+            <option value="cash_on_delivery">Cash on Delivery</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Reference</label>
+          <input id="payRef" type="text" placeholder="e.g. USSD Tx ID…">
+        </div>
+        <div class="row">
+          <label class="tag"><input type="checkbox" id="payVerified"> Verified</label>
+          <button class="btn" id="savePayment">Save payment</button>
+        </div>
+      </div>
+      <div class="block">
+        <h4>Shipping</h4>
+        <div id="shipAddr"></div>
+        <div class="grid-2">
+          <div class="field">
+            <label>Courier</label>
+            <input id="shipCourier" type="text" placeholder="e.g. DHL, Local Driver…">
+          </div>
+          <div class="field">
+            <label>Tracking</label>
+            <input id="shipTracking" type="text" placeholder="Tracking no.">
+          </div>
+        </div>
+        <div class="row">
+          <button class="btn" id="saveShipping">Save shipping</button>
+          <button class="btn ok" id="markDelivered">Mark delivered</button>
+        </div>
+      </div>
+      <div class="block" style="grid-column:1/-1">
+        <h4>Items</h4>
+        <div id="itemsList"></div>
+      </div>
+      <div class="block" style="grid-column:1/-1">
+        <h4>Timeline & Notes</h4>
+        <div class="field">
+          <label>Add note</label>
+          <input id="noteInput" type="text" placeholder="Short note to append to timeline…">
+        </div>
+        <div class="row"><button id="addNoteBtn" class="btn">Add note</button></div>
+        <div id="timeline" style="margin-top:8px"></div>
+      </div>
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn" id="drawerCloseBottom">Close</button>
+  </div>
+</aside>
+
+<!-- Cloudinary widget (for verification proofs) -->
+<script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
+
+<!-- Firebase v8 SDKs -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<!-- Config -->
+<script>
+  window.__FIREBASE_CONFIG__ = window.__FIREBASE_CONFIG__ || {
+    apiKey: "AIzaSyCz446b_SZF8L1HykjAeHrc9LK9GVWX4Q4",
+    authDomain: "your-shop-3bdd1.firebaseapp.com",
+    projectId: "your-shop-3bdd1",
+    storageBucket: "your-shop-3bdd1.appspot.com",
+    messagingSenderId: "440558238881"
+  };
+  window.__CLOUDINARY__ = window.__CLOUDINARY__ || {
+    cloudName: "divjjbwit",
+    uploadPreset: "unsigned_yours_shop",
+    folder: "orders"
+  };
+</script>
+
+<script>
+/* ============ Shortcuts ============ */
+const $ = (s)=>document.querySelector(s);
+const $$ = (s)=>document.querySelectorAll(s);
+
+/* ============ Global State ============ */
+const State = {
+  theme: localStorage.getItem("theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"),
+  lang:  localStorage.getItem("lang")  || (navigator.language?.startsWith("fr") ? "fr" : "en"),
+  user:null, db:null,
+  filters:{ region:"ALL", status:"ALL", pay:"ALL", q:"", from:null, to:null, period:"today" },
+  orders:[],
+  page:{ limit:50, cursor:null, listeningUnsub:null },
+  caches:{ users:new Map(), sellers:new Map(), presence:new Set() },
+  selected:new Set(),
+  drawer:{ id:null, data:null }
+};
+
+/* ============ Theme ============ */
+function applyTheme(){
+  document.documentElement.setAttribute("data-theme", State.theme);
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{
+    m.setAttribute("content", State.theme==="dark" ? "#0b1220" : "#ffffff");
+  });
+}
+function toggleTheme(){
+  State.theme = State.theme==="light" ? "dark" : "light";
+  localStorage.setItem("theme", State.theme);
+  applyTheme();
+}
+$("#themeToggle").addEventListener("click", toggleTheme);
+$("#sideTheme").addEventListener("click", toggleTheme);
+applyTheme();
+
+/* ============ Language / I18N ============ */
+const I18N = {
+  en:{
+    navDashboard:"Dashboard", navOrders:"Orders", navMessaging:"Messaging", navWallet:"Wallet",
+    greet:"ORDERS — OWNER", signOut:"Sign out",
+    chipToday:"Today", chipWeek:"This Week", chipMonth:"This Month", chipYear:"This Year", chipCustom:"Custom",
+    searchPH:"Search ID, customer, phone, email…",
+    refresh:"↻ Refresh", export:"Export CSV", printPending:"Print Pending",
+    autoRefresh:"Auto refresh",
+    kOrders:"Orders (Filtered)", kUV:"Under Verification", kPending:"Pending", kIT:"In Transit", kDelivered:"Delivered (XAF)", kAOV:"Avg Order Value",
+    tableOrders:"Orders", loadMore:"Load more",
+    thOrder:"Order", thStatus:"Status", thCustomer:"Customer", thSeller:"Seller", thRegion:"Region", thPayment:"Payment", thItems:"Items", thTotal:"Total", thCreated:"Created", thActions:"Actions",
+    open:"Open", approve:"Approve", decline:"Decline",
+    order:"Order", orderSummary:"Order Summary", statusVerify:"Status & Verification", verifyNotes:"Verification notes (private)", saveNote:"Save note", uploadProof:"Upload proof",
+    customer:"Customer", payment:"Payment", method:"Method", reference:"Reference", verified:"Verified", savePayment:"Save payment",
+    shipping:"Shipping", courier:"Courier", tracking:"Tracking", saveShipping:"Save shipping", markDelivered:"Mark delivered",
+    items:"Items", timeline:"Timeline & Notes", addNote:"Add note", close:"Close",
+    phVerify:"Add a note visible to staff only…", phPayRef:"e.g. USSD Tx ID…", phCourier:"e.g. DHL, Local Driver…", phTracking:"Tracking no.", phNote:"Short note to append to timeline…",
+    pendingOnlyTitle:"Pending Orders",
+    printCustomer:"Customer", printReceiver:"Receiver", printEmail:"Email", printPhone:"Phone", printFrom:"From", printTo:"To", printOrderId:"Order ID", printCreated:"Created",
+    printWorkerQR:"Worker QR", printManagerQR:"Manager QR",
+    allRegions:"All Regions",
+    statusAll:"All Statuses", payAll:"All Payment",
+    status_under_verification:"Under Verification", status_pending:"Pending", status_packed:"Packed", status_intransit:"In Transit", status_delivered:"Delivered", status_declined:"Declined", status_cancelled:"Cancelled",
+    signInWarn:"You are not signed in. Redirecting to login…",
+    firebaseMissing:"Firebase config is missing or placeholder.",
+    firebaseInitErr:"Firebase init error.",
+    indexNeeded:"A Firestore composite index is required for this filter."
+  },
+  fr:{
+    navDashboard:"Tableau de bord", navOrders:"Commandes", navMessaging:"Messagerie", navWallet:"Portefeuille",
+    greet:"COMMANDES — PROPRIÉTAIRE", signOut:"Se déconnecter",
+    chipToday:"Aujourd’hui", chipWeek:"Cette semaine", chipMonth:"Ce mois", chipYear:"Cette année", chipCustom:"Personnalisé",
+    searchPH:"Rechercher ID, client, téléphone, email…",
+    refresh:"↻ Rafraîchir", export:"Exporter CSV", printPending:"Imprimer en attente",
+    autoRefresh:"Rafraîchissement auto",
+    kOrders:"Commandes (filtrées)", kUV:"Sous vérification", kPending:"En attente", kIT:"En transit", kDelivered:"Livrées (XAF)", kAOV:"Panier moyen",
+    tableOrders:"Commandes", loadMore:"Charger plus",
+    thOrder:"Commande", thStatus:"Statut", thCustomer:"Client", thSeller:"Vendeur", thRegion:"Région", thPayment:"Paiement", thItems:"Articles", thTotal:"Total", thCreated:"Créée", thActions:"Actions",
+    open:"Ouvrir", approve:"Approuver", decline:"Refuser",
+    order:"Commande", orderSummary:"Récapitulatif", statusVerify:"Statut & vérification", verifyNotes:"Notes de vérification (privées)", saveNote:"Enregistrer la note", uploadProof:"Téléverser une preuve",
+    customer:"Client", payment:"Paiement", method:"Méthode", reference:"Référence", verified:"Vérifié", savePayment:"Enregistrer le paiement",
+    shipping:"Expédition", courier:"Transporteur", tracking:"Suivi", saveShipping:"Enregistrer l’expédition", markDelivered:"Marquer livré",
+    items:"Articles", timeline:"Historique & notes", addNote:"Ajouter une note", close:"Fermer",
+    phVerify:"Note visible uniquement par le personnel…", phPayRef:"ex. ID transaction USSD…", phCourier:"ex. DHL, Chauffeur local…", phTracking:"N° de suivi", phNote:"Courte note à ajouter à l’historique…",
+    pendingOnlyTitle:"Commandes en attente",
+    printCustomer:"Client", printReceiver:"Destinataire", printEmail:"Email", printPhone:"Téléphone", printFrom:"De", printTo:"Vers", printOrderId:"ID commande", printCreated:"Créée",
+    printWorkerQR:"QR Ouvrier", printManagerQR:"QR Manager",
+    allRegions:"Toutes les régions",
+    statusAll:"Tous les statuts", payAll:"Tous paiements",
+    status_under_verification:"Sous vérification", status_pending:"En attente", status_packed:"Préparée", status_intransit:"En transit", status_delivered:"Livrée", status_declined:"Refusée", status_cancelled:"Annulée",
+    signInWarn:"Vous n’êtes pas connecté. Redirection vers la connexion…",
+    firebaseMissing:"La configuration Firebase est absente ou fictive.",
+    firebaseInitErr:"Erreur d’initialisation Firebase.",
+    indexNeeded:"Un index composite Firestore est requis pour ce filtre."
+  }
+};
+function t(k){ return (I18N[State.lang] && I18N[State.lang][k]) || k; }
+
+const REGIONS = [
+  {en:"Adamawa", fr:"Adamaoua"},{en:"Centre", fr:"Centre"},{en:"East", fr:"Est"},{en:"Far North", fr:"Extrême-Nord"},
+  {en:"Littoral", fr:"Littoral"},{en:"North", fr:"Nord"},{en:"North-West", fr:"Nord-Ouest"},{en:"West", fr:"Ouest"},
+  {en:"South", fr:"Sud"},{en:"South-West", fr:"Sud-Ouest"}
+];
+
+function applyLang(){
+  document.documentElement.lang = State.lang;
+  // Header & nav
+  $("#greet").textContent = t("greet");
+  document.querySelector('a[title="Dashboard"] span').textContent = t("navDashboard");
+  document.querySelector('a[title="Orders"] span').textContent    = t("navOrders");
+  document.querySelector('a[title="Messaging"] span').textContent = t("navMessaging");
+  document.querySelector('a[title="Wallet"] span').textContent    = t("navWallet");
+  $("#signOutBtn").textContent = t("signOut");
+  // Buttons
+  $("#langToggle").textContent = State.lang.toUpperCase();
+  $("#sideLang").textContent   = State.lang.toUpperCase();
+  $("#refreshBtn").textContent = t("refresh");
+  $("#exportBtn").textContent  = t("export");
+  $("#printPendingBtn").textContent = t("printPending");
+  // Filters chips
+  document.querySelector('.chip[data-period="today"]').textContent = t("chipToday");
+  document.querySelector('.chip[data-period="week"]').textContent  = t("chipWeek");
+  document.querySelector('.chip[data-period="month"]').textContent = t("chipMonth");
+  document.querySelector('.chip[data-period="year"]').textContent  = t("chipYear");
+  document.querySelector('.chip[data-period="custom"]').textContent= t("chipCustom");
+  $("#searchBox").placeholder = t("searchPH");
+  const autoLabel = document.querySelector(".chips label.tag");
+  if(autoLabel){
+    const txt = Array.from(autoLabel.childNodes).find(n=>n.nodeType===Node.TEXT_NODE);
+    if(txt) txt.textContent = " " + t("autoRefresh");
+  }
+  // Selects (status/payment)
+  const statusSel = $("#statusSelect"); const statusMap = ["ALL","under_verification","pending","packed","intransit","delivered","declined","cancelled"];
+  statusSel.querySelectorAll("option").forEach(opt=>{
+    const v = opt.value;
+    if(v==="ALL") opt.textContent = t("statusAll");
+    else opt.textContent = t("status_"+v);
+  });
+  const paySel = $("#paySelect");
+  paySel.querySelector('option[value="ALL"]').textContent = t("payAll");
+
+  // Regions
+  fillRegions();
+
+  // KPIs headers
+  document.querySelectorAll(".kpis .card .k")[0].textContent = t("kOrders");
+  document.querySelectorAll(".kpis .card .k")[1].textContent = t("kUV");
+  document.querySelectorAll(".kpis .card .k")[2].textContent = t("kPending");
+  document.querySelectorAll(".kpis .card .k")[3].textContent = t("kIT");
+  document.querySelectorAll(".kpis .card .k")[4].textContent = t("kDelivered");
+  document.querySelectorAll(".kpis .card .k")[5].textContent = t("kAOV");
+
+  // Table headers
+  const ths = $("#ordersTable thead tr").children;
+  ths[1].textContent=t("thOrder"); ths[2].textContent=t("thStatus"); ths[3].textContent=t("thCustomer"); ths[4].textContent=t("thSeller");
+  ths[5].textContent=t("thRegion"); ths[6].textContent=t("thPayment"); ths[7].textContent=t("thItems"); ths[8].textContent=t("thTotal"); ths[9].textContent=t("thCreated"); ths[10].textContent=t("thActions");
+
+  // Panel title & Load more
+  document.querySelector(".panel h3 span").textContent = t("tableOrders");
+  $("#loadMoreBtn").textContent = t("loadMore");
+
+  // Drawer labels
+  $("#drawerTitle").textContent = t("order");
+  document.querySelectorAll(".block h4")[0].textContent = t("orderSummary");
+  document.querySelectorAll(".block h4")[1].textContent = t("statusVerify");
+  document.querySelectorAll(".block h4")[2].textContent = t("customer");
+  document.querySelectorAll(".block h4")[3].textContent = t("payment");
+  document.querySelectorAll(".block h4")[4].textContent = t("shipping");
+  document.querySelectorAll(".block h4")[5].textContent = t("items");
+  document.querySelectorAll(".block h4")[6].textContent = t("timeline");
+
+  document.querySelectorAll(".field label")[0].textContent = t("verifyNotes");
+  document.querySelectorAll(".field label")[1].textContent = t("method");
+  document.querySelectorAll(".field label")[2].textContent = t("reference");
+  document.querySelectorAll(".field label")[3].textContent = t("courier");
+  document.querySelectorAll(".field label")[4].textContent = t("tracking");
+
+  $("#verifyNote").placeholder = t("phVerify");
+  $("#payRef").placeholder     = t("phPayRef");
+  $("#shipCourier").placeholder= t("phCourier");
+  $("#shipTracking").placeholder=t("phTracking");
+  $("#noteInput").placeholder  = t("phNote");
+
+  $("#saveVerifyNote").textContent = t("saveNote");
+  $("#uploadProofBtn").textContent = t("uploadProof");
+  $("#savePayment").textContent    = t("savePayment");
+  $("#saveShipping").textContent   = t("saveShipping");
+  $("#markDelivered").textContent  = t("markDelivered");
+  $("#addNoteBtn").textContent     = t("addNote");
+  $("#drawerCloseBottom").textContent = t("close");
+  $("#printInvoiceBtn").textContent= (State.lang==="fr"?"Imprimer la facture":"Print Invoice");
+  $("#printPackingBtn").textContent= (State.lang==="fr"?"Bon de colisage":"Packing Slip");
+  $("#actApprove").textContent = t("approve");
+  $("#actDecline").textContent = t("decline");
+  $("#actNext").textContent    = (State.lang==="fr"?"Statut suivant":"Next Status");
+
+  // Refresh table to update text inside rows/pills
+  renderTable();
+}
+function toggleLang(){
+  State.lang = (State.lang==="en" ? "fr" : "en");
+  localStorage.setItem("lang", State.lang);
+  $("#langToggle").textContent = State.lang.toUpperCase();
+  $("#sideLang").textContent   = State.lang.toUpperCase();
+  applyLang();
+}
+
+$("#langToggle").addEventListener("click", toggleLang);
+$("#sideLang").addEventListener("click", toggleLang);
+
+/* ============ Basic UI ============ */
+$("#menuBtn").addEventListener("click", ()=>{
+  $("#sidebar").classList.toggle("open");
+  $("#backdrop").classList.toggle("show");
+});
+$("#backdrop").addEventListener("click", ()=>{
+  $("#sidebar").classList.remove("open");
+  $("#backdrop").classList.remove("show");
+});
+$("#year").textContent = new Date().getFullYear();
+
+/* ============ Regions ============ */
+function fillRegions(){
+  const sel = $("#regionSelect"); if(!sel) return;
+  const keep = State.filters.region;
+  sel.innerHTML="";
+  const optAll = document.createElement("option");
+  optAll.value="ALL"; optAll.textContent = t("allRegions");
+  sel.appendChild(optAll);
+  REGIONS.forEach(r=>{
+    const o=document.createElement("option");
+    o.value=r.en; o.textContent=(State.lang==="fr"?r.fr:r.en);
+    sel.appendChild(o);
+  });
+  sel.value = keep;
+}
+
+/* ============ Firebase Init + Owner Gate (guarded) ============ */
+let auth=null, db=null;
+(function initFirebase(){
+  const cfg = window.__FIREBASE_CONFIG__;
+  if(!cfg || /YOUR_/.test(JSON.stringify(cfg))){
+    const w=$("#configWarning"); w.style.display="block"; w.textContent = t("firebaseMissing");
+  }
+  try{
+    const app = firebase.apps?.length ? firebase.app() : firebase.initializeApp(cfg);
+    auth = firebase.auth(); auth.useDeviceLanguage();
+    db   = firebase.firestore();
+    State.db = db;
+  }catch(e){
+    console.error(e);
+    const w=$("#configWarning"); w.style.display="block"; w.textContent = t("firebaseInitErr");
+  }
+})();
+$("#signOutBtn").addEventListener("click", ()=> auth?.signOut?.());
+
+if (auth && typeof auth.onAuthStateChanged === "function") {
+  auth.onAuthStateChanged(async (user)=>{
+    if(!user){ alert(t("signInWarn")); return location.assign("/login.html"); }
+    State.user = user;
+    try{
+      const doc = await db.collection("users").doc(user.uid).get();
+      if(!doc.exists || doc.get("role")!=="owner"){ await auth.signOut(); return; }
+    }catch(e){ console.warn(e); }
+    if(user.displayName){ $("#greet").textContent = `${(State.lang==="fr"?"COMMANDES — ":"ORDERS — ")}${user.displayName.toUpperCase()}`; }
+    setupPresenceWatch();
+    initFilters();
+    runQuery(true);
+    applyLang();
+  });
+} else {
+  // Fallback so UI is fully usable (without data) if Firebase failed
+  initFilters();
+  applyLang();
+}
+
+/* ============ Presence (online customers) ============ */
+function setupPresenceWatch(){
+  try{
+    db.collection("presence").where("online","==",true).onSnapshot(snap=>{
+      const now = Date.now();
+      const fresh = new Set();
+      snap.forEach(d=>{
+        const v = d.data()||{};
+        let last = 0;
+        try{
+          if(v.lastSeen && v.lastSeen.toDate) last = v.lastSeen.toDate().getTime();
+          else if (typeof v.lastSeen === "number") last = v.lastSeen;
+          else if (v.lastSeen && v.lastSeen.seconds) last = v.lastSeen.seconds*1000;
+        }catch(_){}
+        if(now-last <= 2*60*1000) fresh.add(d.id);
+      });
+      State.caches.presence = fresh;
+      renderTable();
+    });
+  }catch(e){ console.warn("presence watch", e); }
+}
+
+/* ============ Filters, Periods, Search ============ */
+const fromInput = $("#fromDate"), toInput=$("#toDate");
+const statusSelect=$("#statusSelect"), paySelect=$("#paySelect"), regionSelect=$("#regionSelect");
+const searchBox=$("#searchBox");
+
+function setPeriod(p){
+  State.filters.period = p;
+  $$(".chips .chip").forEach(c=> c.classList.toggle("active", c.dataset.period===p));
+  const now = new Date(), start = new Date(now);
+  if(p==="today"){ start.setHours(0,0,0,0); }
+  if(p==="week"){ const d=now.getDay()||7; start.setDate(now.getDate()-d+1); start.setHours(0,0,0,0); }
+  if(p==="month"){ start.setFullYear(now.getFullYear(), now.getMonth(), 1); start.setHours(0,0,0,0); }
+  if(p==="year"){ start.setFullYear(now.getFullYear(), 0, 1); start.setHours(0,0,0,0); }
+  const custom = (p==="custom");
+  fromInput.style.opacity = custom?1:.65; toInput.style.opacity=custom?1:.65;
+  fromInput.disabled = !custom; toInput.disabled=!custom;
+  if(!custom){ State.filters.from = start; State.filters.to = now; fromInput.valueAsDate = start; toInput.valueAsDate = now; }
+}
+
+function initFilters(){
+  setPeriod("today");
+  regionSelect.addEventListener("change", ()=>{ State.filters.region=regionSelect.value; runQuery(true); });
+  statusSelect.addEventListener("change", ()=>{ State.filters.status=statusSelect.value; runQuery(true); });
+  paySelect.addEventListener("change",    ()=>{ State.filters.pay=paySelect.value; runQuery(true); });
+  fromInput.addEventListener("change",    ()=>{ if(State.filters.period==="custom"){ State.filters.from = new Date(fromInput.value); runQuery(true); } });
+  toInput.addEventListener("change",      ()=>{ if(State.filters.period==="custom"){ State.filters.to   = new Date(toInput.value);   runQuery(true); } });
+  $$(".chips .chip").forEach(b=> b.addEventListener("click", ()=>{ setPeriod(b.dataset.period); runQuery(true); }));
+  $("#refreshBtn").addEventListener("click", ()=> runQuery(true));
+  $("#exportBtn").addEventListener("click", exportCSV);
+  $("#printPendingBtn").addEventListener("click", printPendingOrders);
+  $("#autoRefresh").addEventListener("change", (e)=>{
+    if(e.target.checked){ State.autoT = setInterval(()=>runQuery(true), 60000); }
+    else { clearInterval(State.autoT); }
+  });
+  searchBox.addEventListener("input", ()=> renderTable());
+  $("#loadMoreBtn").addEventListener("click", ()=> runQuery(false));
+}
+
+/* ============ Firestore Query & Live ============ */
+const XT = firebase.firestore.Timestamp;
+function ts(d){ return XT.fromDate(d); }
+function stopListening(){ if(State.page.listeningUnsub){ try{ State.page.listeningUnsub(); }catch(_){} State.page.listeningUnsub=null; } }
+
+async function runQuery(reset){
+  if(!State.db){ return; }
+  try{
+    if(reset){ stopListening(); State.orders=[]; State.page.cursor=null; State.selected.clear(); toggleBulkBar(); }
+    const {from,to,region,status} = State.filters;
+    if(!from || !to){ setPeriod(State.filters.period||"today"); }
+
+    let q = State.db.collection("orders")
+      .where("createdAt", ">=", ts(State.filters.from))
+      .where("createdAt", "<=", ts(State.filters.to))
+      .orderBy("createdAt","desc");
+
+    if(region!=="ALL") q = q.where("region","==", region);
+    if(status!=="ALL") q = q.where("status","==", status);
+    if(State.page.cursor) q = q.startAfter(State.page.cursor);
+    q = q.limit(State.page.limit);
+
+    State.page.listeningUnsub = q.onSnapshot(snap=>{
+      const arr = [];
+      snap.docChanges().forEach(ch=>{
+        const d = { id: ch.doc.id, ...ch.doc.data() };
+        if(ch.type==="added"){ arr.push(d); }
+        if(ch.type==="modified"){
+          const idx = State.orders.findIndex(x=>x.id===d.id);
+          if(idx>=0){ State.orders[idx] = d; } else { State.orders.push(d); }
+        }
+        if(ch.type==="removed"){
+          const idx = State.orders.findIndex(x=>x.id===d.id);
+          if(idx>=0){ State.orders.splice(idx,1); }
+        }
+      });
+      if(arr.length){ State.orders.push(...arr); }
+      if(snap.docs.length){ State.page.cursor = snap.docs[snap.docs.length-1]; }
+      renderTable();
+    }, e=>{
+      console.error(e);
+      const w=$("#configWarning");
+      if(/FAILED_PRECONDITION|failed-precondition/i.test(e.message||"")){ w.style.display="block"; w.textContent = t("indexNeeded"); }
+    });
+  }catch(e){
+    console.error(e);
+    const w=$("#configWarning"); w.style.display="block"; w.textContent = t("firebaseInitErr");
+  }
+}
+
+/* ============ User/Seller Cache ============ */
+async function getUser(uid){
+  if(!uid || !State.db) return null;
+  if(State.caches.users.has(uid)) return State.caches.users.get(uid);
+  try{
+    const d = await State.db.collection("users").doc(uid).get();
+    const val = d.exists ? ({ id:d.id, ...d.data() }) : null;
+    State.caches.users.set(uid, val);
+    return val;
+  }catch(_){ State.caches.users.set(uid, null); return null; }
+}
+
+/* ============ Helpers ============ */
+function money(v){ try{return "XAF " + (+v||0).toLocaleString();}catch{return "XAF "+(+v||0);} }
+function fmtDate(v){
+  try{
+    if(!v) return "";
+    if(v.toDate) return v.toDate().toLocaleString();
+    if(v.seconds) return new Date(v.seconds*1000).toLocaleString();
+    if(v instanceof Date) return v.toLocaleString();
+    return String(v);
+  }catch(_){ return ""; }
+}
+function statusPillText(s){
+  const map = {
+    under_verification:t("status_under_verification"),
+    pending:t("status_pending"),
+    packed:t("status_packed"),
+    intransit:t("status_intransit"),
+    delivered:t("status_delivered"),
+    declined:t("status_declined"),
+    cancelled:t("status_cancelled")
+  };
+  return map[s]||s;
+}
+function statusPill(s){
+  const map = {
+    under_verification:"s-verify", pending:"s-pending", packed:"s-packed",
+    intransit:"s-intransit", delivered:"s-delivered",
+    declined:"s-declined", cancelled:"s-cancelled"
+  };
+  return `<span class="pill ${map[s]||"s-pending"}">${statusPillText(s)}</span>`;
+}
+function searchMatch(o, q){
+  if(!q) return true;
+  q = q.toLowerCase().trim();
+  if(o.id?.toLowerCase().includes(q)) return true;
+  const u = o.customer || {};
+  if((u.email||o.customerEmail||"").toLowerCase().includes(q)) return true;
+  if((u.phone||o.customerPhone||"").toLowerCase().includes(q)) return true;
+  if((u.name||o.customerName||"").toLowerCase().includes(q)) return true;
+  const s = o.seller || {};
+  if((s.name||o.sellerName||"").toLowerCase().includes(q)) return true;
+  return false;
+}
+
+/* ============ Table Render ============ */
+const bodyEl = $("#ordersBody");
+$("#selAll").addEventListener("change", (e)=>{
+  if(e.target.checked){ State.orders.forEach(o=> State.selected.add(o.id)); }
+  else { State.selected.clear(); }
+  renderTable();
+});
+function toggleBulkBar(){
+  $("#bulkBar").classList.toggle("show", State.selected.size>0);
+  $("#bulkSelCount").innerHTML = `<strong>${State.selected.size}</strong> ${State.lang==="fr"?"sélectionnée(s)":"selected"}`;
+}
+async function renderTable(){
+  const q = searchBox.value.trim().toLowerCase();
+
+  for(const o of State.orders){
+    if(!o.customerName || !o.customerEmail){
+      const u = await getUser(o.userId); if(u){ o.customerName = u.displayName||u.name||""; o.customerEmail=u.email||""; o.customerPhone=u.phone||u.phoneNumber||""; o.customerRegion=u.region||o.region; }
+    }
+    if(o.sellerId && (!o.sellerName || !o.sellerRegion)){
+      const s = await getUser(o.sellerId); if(s){ o.sellerName = s.displayName||s.name||""; o.sellerRegion = s.region||""; }
+    }
+  }
+
+  const rows = State.orders
+    .filter(o => State.filters.pay==="ALL" ? true : ((o.payment?.method||"")===State.filters.pay))
+    .filter(o => State.filters.region==="ALL" ? true : (o.region===State.filters.region))
+    .filter(o => State.filters.status==="ALL" ? true : (o.status===State.filters.status))
+    .filter(o => searchMatch(o,q));
+
+  // KPIs
+  $("#kpiCount").textContent = rows.length.toLocaleString();
+  $("#kpiUV").textContent    = rows.filter(o=>o.status==="under_verification").length.toLocaleString();
+  $("#kpiP").textContent     = rows.filter(o=>o.status==="pending").length.toLocaleString();
+  $("#kpiIT").textContent    = rows.filter(o=>o.status==="intransit").length.toLocaleString();
+  const delivered = rows.filter(o=>o.status==="delivered");
+  const deliveredSum = delivered.reduce((a,x)=> a + (+x.total||0), 0);
+  $("#kpiDelivered").textContent = money(deliveredSum);
+  const aov = rows.length ? rows.reduce((a,x)=> a + (+x.total||0), 0)/rows.length : 0;
+  $("#kpiAOV").textContent = money(aov);
+
+  bodyEl.innerHTML = rows.map(o=>{
+    const online = State.caches.presence.has(o.userId);
+    const itemsCount = Array.isArray(o.items)? o.items.reduce((a,x)=> a + (+x.qty||1), 0) : (o.itemsCount||0);
+    return `<tr data-id="${o.id}">
+      <td><input type="checkbox" class="selRow" ${State.selected.has(o.id)?"checked":""}></td>
+      <td><div style="display:flex;flex-direction:column;gap:2px"><strong>${o.id}</strong><small class="muted">${money(o.total||0)}</small></div></td>
+      <td>${statusPill(o.status||"pending")}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="width:8px;height:8px;border-radius:50%;background:${online?"#10b981":"#9aa3b2"}"></span>
+          <div style="display:flex;flex-direction:column">
+            <span>${o.customerName||"—"}</span>
+            <small class="muted">${o.customerEmail||""}${o.customerPhone? " • "+o.customerPhone:""}</small>
+          </div>
+        </div>
+      </td>
+      <td>${o.sellerName||"—"}</td>
+      <td>${o.region||"—"}</td>
+      <td>${(o.payment?.method||"—")}${o.payment?.verified? ' <span class="tag">'+t("verified")+'</span>':''}</td>
+      <td>${itemsCount}</td>
+      <td>${money(o.grandTotal ?? o.total)}</td>
+      <td>${fmtDate(o.createdAt)}</td>
+      <td>
+        <button class="btn" data-act="open">${t("open")}</button>
+        ${o.status==="under_verification" ? '<button class="btn ok" data-act="approve">'+t("approve")+'</button>' : ''}
+        ${o.status==="under_verification" ? '<button class="btn danger" data-act="decline">'+t("decline")+'</button>' : ''}
+      </td>
+    </tr>`;
+  }).join("");
+
+  // bind row events
+  $$("#ordersBody .selRow").forEach(cb=>{
+    cb.addEventListener("change", (e)=>{
+      const id = e.target.closest("tr").dataset.id;
+      if(e.target.checked) State.selected.add(id); else State.selected.delete(id);
+      toggleBulkBar();
+    });
+  });
+  $$("#ordersBody tr").forEach(tr=>{
+    tr.addEventListener("click", (e)=>{
+      if(e.target.closest("input,button")) return;
+      openDrawer(tr.dataset.id);
+    });
+  });
+  $$("#ordersBody [data-act='open']").forEach(btn=>{
+    btn.addEventListener("click", (e)=>{ e.stopPropagation(); openDrawer(btn.closest("tr").dataset.id); });
+  });
+  $$("#ordersBody [data-act='approve']").forEach(btn=>{
+    btn.addEventListener("click", async (e)=>{ e.stopPropagation(); const id=btn.closest("tr").dataset.id; await approveOrder(id); });
+  });
+  $$("#ordersBody [data-act='decline']").forEach(btn=>{
+    btn.addEventListener("click", async (e)=>{ e.stopPropagation(); const id=btn.closest("tr").dataset.id; await declineOrder(id); });
+  });
+
+  $("#selAll").checked = (State.selected.size>0 && State.selected.size===rows.length);
+  toggleBulkBar();
+}
+
+/* ============ Bulk Actions ============ */
+$("#bulkApprove").addEventListener("click", ()=> bulkStatus("approve"));
+$("#bulkPacked").addEventListener("click",  ()=> bulkStatus("packed"));
+$("#bulkInTransit").addEventListener("click",()=> bulkStatus("intransit"));
+$("#bulkDelivered").addEventListener("click",()=> bulkStatus("delivered"));
+$("#bulkDecline").addEventListener("click", ()=> bulkStatus("decline"));
+$("#bulkExport").addEventListener("click", ()=> exportCSV(true));
+
+async function bulkStatus(kind){
+  if(State.selected.size===0 || !State.db) return;
+  const ids = [...State.selected];
+  let note = "";
+  if(kind==="decline"){
+    note = prompt(State.lang==="fr"?"Motif de refus (requis) :":"Decline reason (required):")||"";
+    if(!note.trim()) return alert(State.lang==="fr"?"Motif requis.":"Reason required.");
+  }else{
+    note = prompt(State.lang==="fr"?"Note optionnelle pour l’historique (OK pour continuer) :":"Optional note for timeline (press OK to continue):")||"";
+  }
+  if(!confirm(`${kind.toUpperCase()} ${ids.length} ${State.lang==="fr"?"commande(s)?":"order(s)?"}`)) return;
+
+  const batch = State.db.batch();
+  const now = firebase.firestore.FieldValue.serverTimestamp();
+  for(const id of ids){
+    const ref = State.db.collection("orders").doc(id);
+    const timelineEntry = { at: now, by: State.user.uid, type: `bulk_${kind}`, note };
+    if(kind==="approve"){
+      batch.update(ref, { status:"pending", timeline: firebase.firestore.FieldValue.arrayUnion(timelineEntry) });
+    }else if(kind==="decline"){
+      batch.update(ref, { status:"declined", timeline: firebase.firestore.FieldValue.arrayUnion(timelineEntry) });
+    }else{
+      const next = (kind==="packed"?"packed": kind==="intransit"?"intransit" : "delivered");
+      const extra = (next==="delivered") ? { deliveredAt: now } : {};
+      batch.update(ref, { status:next, ...extra, timeline: firebase.firestore.FieldValue.arrayUnion(timelineEntry) });
+    }
+  }
+  try{
+    await batch.commit();
+    State.selected.clear();
+    toggleBulkBar();
+    alert(State.lang==="fr"?"Terminé.":"Done.");
+  }catch(e){
+    console.error(e);
+    alert(State.lang==="fr"?"Échec de l’action groupée.":"Failed to apply bulk action.");
+  }
+}
+
+/* ============ Single Approve / Decline ============ */
+async function approveOrder(id){
+  if(!State.db) return;
+  try{
+    const ref = State.db.collection("orders").doc(id);
+    await ref.update({
+      status:"pending",
+      timeline: firebase.firestore.FieldValue.arrayUnion({
+        at: firebase.firestore.FieldValue.serverTimestamp(),
+        by: State.user.uid, type:"verification_approved", note:(State.lang==="fr"?"Approuvé par le propriétaire":"Approved by owner")
+      })
+    });
+    alert(State.lang==="fr"?"Approuvé.":"Approved.");
+  }catch(e){ console.error(e); alert(State.lang==="fr"?"Échec de l’approbation.":"Failed to approve."); }
+}
+async function declineOrder(id){
+  if(!State.db) return;
+  const reason = prompt(State.lang==="fr"?"Motif du refus :":"Reason for decline:")||"";
+  if(!reason.trim()) return;
+  try{
+    const ref = State.db.collection("orders").doc(id);
+    await ref.update({
+      status:"declined",
+      timeline: firebase.firestore.FieldValue.arrayUnion({
+        at: firebase.firestore.FieldValue.serverTimestamp(),
+        by: State.user.uid, type:"verification_declined", note:reason
+      })
+    });
+    alert(State.lang==="fr"?"Refusée.":"Declined.");
+  }catch(e){ console.error(e); alert(State.lang==="fr"?"Échec du refus.":"Failed to decline."); }
+}
+
+/* ============ Drawer ============ */
+const drawer = $("#drawer");
+$("#drawerClose").addEventListener("click", ()=> drawer.classList.remove("show"));
+$("#drawerCloseBottom").addEventListener("click", ()=> drawer.classList.remove("show"));
+
+let drawerUnsub = null;
+function unsubDrawer(){ if(drawerUnsub){ try{drawerUnsub();}catch(_){ } drawerUnsub=null; } }
+function nextStatus(s){
+  if(s==="under_verification") return "pending";
+  if(s==="pending") return "packed";
+  if(s==="packed") return "intransit";
+  if(s==="intransit") return "delivered";
+  return null;
+}
+function renderProofs(o){
+  const files = o.files || [];
+  if(!files.length) return "<small class='muted'>"+(State.lang==="fr"?"Aucune preuve.":"No proofs uploaded.")+"</small>";
+  return files.map((u,i)=> `<div class="row" style="margin-bottom:6px"><a href="${u}" target="_blank">${(State.lang==="fr"?"Preuve ":"Proof ")}${i+1}</a></div>`).join("");
+}
+function renderItems(o){
+  const items = Array.isArray(o.items)? o.items : [];
+  if(!items.length) return "<small class='muted'>"+(State.lang==="fr"?"Aucun article.":"No items.")+"</small>";
+  return `<table class="table" style="border:1px solid var(--line)">
+    <thead><tr><th>${t("items")}</th><th>Qty</th><th class="right">Price</th><th class="right">Total</th></tr></thead>
+    <tbody>${items.map(it=>`<tr><td>${it.title||it.name||"—"}</td><td>${it.qty||1}</td><td class="right">${money(it.price||0)}</td><td class="right">${money((it.qty||1)*(it.price||0))}</td></tr>`).join("")}</tbody>
+  </table>`;
+}
+function renderTimeline(o){
+  const tl = Array.isArray(o.timeline)? o.timeline.slice().sort((a,b)=>{
+    const ta = (a.at && a.at.toDate)? a.at.toDate().getTime() : 0;
+    const tb = (b.at && b.at.toDate)? b.at.toDate().getTime() : 0;
+    return tb-ta;
+  }) : [];
+  if(!tl.length) return "<small class='muted'>"+(State.lang==="fr"?"Aucun événement.":"No events yet.")+"</small>";
+  return tl.map(ev=>{
+    const when = fmtDate(ev.at);
+    const type = ev.type || "note";
+    const note = ev.note || ev.message || "";
+    return `<div class="row" style="justify-content:space-between;border-bottom:1px dashed var(--line);padding:6px 0">
+      <span class="tag">${type}</span>
+      <span>${note}</span>
+      <small class="muted">${when}</small>
+    </div>`;
+  }).join("");
+}
+function refreshDrawerUI(o){
+  State.drawer.data = o;
+  $("#drawerTitle").textContent = `${t("order")} — ${o.id}`;
+  $("#statusPill").className = "pill " + ({
+    under_verification:"s-verify", pending:"s-pending", packed:"s-packed",
+    intransit:"s-intransit", delivered:"s-delivered",
+    declined:"s-declined", cancelled:"s-cancelled"
+  }[o.status] || "s-pending");
+  $("#statusPill").textContent = statusPillText(o.status);
+
+  const tags = [];
+  if(o.payment?.method){ tags.push(`<span class="tag">${t("payment").toLowerCase()}: ${o.payment.method}${o.payment.verified?" • "+t("verified"):""}</span>`); }
+  if(o.region){ tags.push(`<span class="tag">${o.region}</span>`); }
+  if(o.courier){ tags.push(`<span class="tag">${t("courier").toLowerCase()}: ${o.courier}</span>`); }
+  $("#orderTags").innerHTML = tags.join("");
+
+  const subtotal = +o.subtotal||0, ship=+o.ship||0, txFee=+o.txFee||0, total=+o.total||+o.grandTotal||0;
+  $("#orderMoney").innerHTML = `
+    <div>Subtotal: <strong>${money(subtotal)}</strong></div>
+    <div>Shipping: <strong>${money(ship)}</strong></div>
+    <div>Fees: <strong>${money(txFee)}</strong></div>
+    <div style="margin-top:6px">${(State.lang==="fr"?"Total TTC":"Grand Total")}: <strong>${money(total)}</strong></div>
+    <div style="margin-top:6px"><small class="muted">${(State.lang==="fr"?"Créée":"Created")}: ${fmtDate(o.createdAt)} • ${(State.lang==="fr"?"Livrée":"Delivered")}: ${fmtDate(o.deliveredAt)||"—"}</small></div>
+  `;
+
+  $("#verifyNote").value = o.verification?.note || "";
+  $("#proofsList").innerHTML = renderProofs(o);
+  $("#itemsList").innerHTML = renderItems(o);
+  $("#timeline").innerHTML = renderTimeline(o);
+
+  $("#payMethod").value = o.payment?.method||"";
+  $("#payRef").value     = o.payment?.ref||"";
+  $("#payVerified").checked = !!o.payment?.verified;
+
+  const addr = o.shipping?.address || o.address || {};
+  $("#shipAddr").innerHTML = `
+    <div><strong>${(addr.name||o.customerName||"")}</strong></div>
+    <div>${addr.line1||""} ${addr.line2||""}</div>
+    <div>${addr.city||""} ${addr.region||o.region||""}</div>
+    <div>${addr.phone||o.customerPhone||""}</div>
+  `;
+  $("#shipCourier").value  = o.courier||"";
+  $("#shipTracking").value = o.tracking||"";
+
+  $("#actApprove").style.display = (o.status==="under_verification") ? "" : "none";
+  $("#actDecline").style.display = (o.status==="under_verification") ? "" : "";
+  $("#actNext").disabled = !nextStatus(o.status);
+}
+
+function openDrawer(id){
+  unsubDrawer();
+  State.drawer.id = id;
+  drawer.classList.add("show");
+  if(!State.db) return;
+  drawerUnsub = State.db.collection("orders").doc(id).onSnapshot(doc=>{
+    if(!doc.exists){ drawer.classList.remove("show"); return; }
+    const data = { id:doc.id, ...doc.data() };
+    refreshDrawerUI(data);
+  });
+}
+
+$("#actApprove").addEventListener("click", async ()=>{
+  if(!State.drawer.id) return;
+  await approveOrder(State.drawer.id);
+});
+$("#actDecline").addEventListener("click", async ()=>{
+  if(!State.drawer.id) return;
+  await declineOrder(State.drawer.id);
+});
+$("#actNext").addEventListener("click", async ()=>{
+  if(!State.drawer.id || !State.db) return;
+  const o = State.drawer.data; const ns = nextStatus(o.status);
+  if(!ns) return;
+  try{
+    await State.db.collection("orders").doc(o.id).update({
+      status: ns,
+      ...(ns==="delivered" ? { deliveredAt: firebase.firestore.FieldValue.serverTimestamp() } : {}),
+      timeline: firebase.firestore.FieldValue.arrayUnion({
+        at: firebase.firestore.FieldValue.serverTimestamp(),
+        by: State.user.uid, type:"status_change", note:`${o.status} → ${ns}`
+      })
+    });
+  }catch(e){ console.error(e); alert(State.lang==="fr"?"Échec du changement de statut.":"Failed to change status."); }
+});
+
+$("#saveVerifyNote").addEventListener("click", async ()=>{
+  if(!State.drawer.id || !State.db) return;
+  const note = $("#verifyNote").value||"";
+  try{
+    await State.db.collection("orders").doc(State.drawer.id).set({
+      verification:{ ...(State.drawer.data?.verification||{}), note },
+      timeline: firebase.firestore.FieldValue.arrayUnion({
+        at: firebase.firestore.FieldValue.serverTimestamp(),
+        by: State.user.uid, type:"verification_note", note
+      })
+    }, { merge:true });
+    alert(State.lang==="fr"?"Enregistré.":"Saved.");
+  }catch(e){ console.error(e); alert(State.lang==="fr"?"Échec de l’enregistrement.":"Failed to save note."); }
+});
+
+$("#uploadProofBtn").addEventListener("click", ()=>{
+  const w = cloudinary.createUploadWidget({
+    cloudName: window.__CLOUDINARY__.cloudName,
+    uploadPreset: window.__CLOUDINARY__.uploadPreset,
+    folder: window.__CLOUDINARY__.folder || "orders",
+    multiple:true, sources:["local","camera","url"]
+  }, async (err, res)=>{
+    if(err) return console.warn(err);
+    if(res && res.event==="success" && State.db){
+      const url = res.info.secure_url;
+      try{
+        await State.db.collection("orders").doc(State.drawer.id).update({
+          files: firebase.firestore.FieldValue.arrayUnion(url),
+          timeline: firebase.firestore.FieldValue.arrayUnion({
+            at: firebase.firestore.FieldValue.serverTimestamp(),
+            by: State.user.uid, type:"proof_upload", note:url
+          })
+        });
+      }catch(e){ console.error(e); alert(State.lang==="fr"?"Échec de l’ajout de la preuve.":"Failed to attach proof."); }
+    }
+  });
+  w.open();
+});
+
+$("#savePayment").addEventListener("click", async ()=>{
+  if(!State.drawer.id || !State.db) return;
+  const method = $("#payMethod").value || "";
+  const ref    = $("#payRef").value || "";
+  const verified = $("#payVerified").checked;
+  try{
+    await State.db.collection("orders").doc(State.drawer.id).set({
+      payment:{ ...(State.drawer.data?.payment||{}), method, ref, verified }
+    }, { merge:true });
+    await State.db.collection("orders").doc(State.drawer.id).update({
+      timeline: firebase.firestore.FieldValue.arrayUnion({
+        at: firebase.firestore.FieldValue.serverTimestamp(),
+        by: State.user.uid, type:"payment_update", note:`method=${method} ref=${ref} verified=${verified}`
+      })
+    });
+    alert(State.lang==="fr"?"Paiement enregistré.":"Payment saved.");
+  }catch(e){ console.error(e); alert(State.lang==="fr"?"Échec de l’enregistrement du paiement.":"Failed to save payment."); }
+});
+
+$("#saveShipping").addEventListener("click", async ()=>{
+  if(!State.drawer.id || !State.db) return;
+  const courier = $("#shipCourier").value||"";
+  const tracking= $("#shipTracking").value||"";
+  try{
+    await State.db.collection("orders").doc(State.drawer.id).set({ courier, tracking }, { merge:true });
+    await State.db.collection("orders").doc(State.drawer.id).update({
+      timeline: firebase.firestore.FieldValue.arrayUnion({
+        at: firebase.firestore.FieldValue.serverTimestamp(),
+        by: State.user.uid, type:"shipping_update", note:`courier=${courier} tracking=${tracking}`
+      })
+    });
+    alert(State.lang==="fr"?"Expédition enregistrée.":"Shipping saved.");
+  }catch(e){ console.error(e); alert(State.lang==="fr"?"Échec de l’enregistrement de l’expédition.":"Failed to save shipping."); }
+});
+
+$("#markDelivered").addEventListener("click", async ()=>{
+  if(!State.drawer.id || !State.db) return;
+  if(!confirm(State.lang==="fr"?"Marquer cette commande comme livrée ?":"Mark this order as delivered?")) return;
+  try{
+    await State.db.collection("orders").doc(State.drawer.id).update({
+      status:"delivered",
+      deliveredAt: firebase.firestore.FieldValue.serverTimestamp(),
+      timeline: firebase.firestore.FieldValue.arrayUnion({
+        at: firebase.firestore.FieldValue.serverTimestamp(),
+        by: State.user.uid, type:"status_change", note:"marked delivered"
+      })
+    });
+  }catch(e){ console.error(e); alert(State.lang==="fr"?"Échec du marquage en livré.":"Failed to mark delivered."); }
+});
+
+$("#addNoteBtn").addEventListener("click", async ()=>{
+  if(!State.drawer.id || !State.db) return;
+  const note = $("#noteInput").value.trim(); if(!note) return;
+  try{
+    await State.db.collection("orders").doc(State.drawer.id).update({
+      timeline: firebase.firestore.FieldValue.arrayUnion({
+        at: firebase.firestore.FieldValue.serverTimestamp(),
+        by: State.user.uid, type:"note", note
+      })
+    });
+    $("#noteInput").value="";
+  }catch(e){ console.error(e); alert(State.lang==="fr"?"Échec de l’ajout de la note.":"Failed to add note."); }
+});
+
+/* ============ Print (Invoice / Packing) ============ */
+function buildInvoiceHTML(o){
+  const items = Array.isArray(o.items)? o.items : [];
+  return `<!doctype html><html><head><meta charset="utf-8"><title>Invoice ${o.id}</title>
+  <style>body{font-family:Inter,Arial,sans-serif;padding:16px} h2{margin:0 0 6px} table{width:100%;border-collapse:collapse} th,td{border:1px solid #ddd;padding:6px} .right{text-align:right}</style>
+  </head><body>
+    <h2>${State.lang==="fr"?"Facture":"Invoice"} — ${o.id}</h2>
+    <div>${State.lang==="fr"?"Date":"Date"}: ${fmtDate(o.createdAt)}</div>
+    <div>${t("customer")}: ${o.customerName||""} (${o.customerEmail||""})</div>
+    <hr/>
+    <table><thead><tr><th>${t("items")}</th><th>Qty</th><th class="right">Price</th><th class="right">Total</th></tr></thead>
+      <tbody>${items.map(it=>`<tr><td>${it.title||it.name||"—"}</td><td>${it.qty||1}</td><td class="right">${money(it.price||0)}</td><td class="right">${money((it.qty||1)*(it.price||0))}</td></tr>`).join("")}</tbody>
+    </table>
+    <div class="right" style="margin-top:10px">
+      <div>Subtotal: <strong>${money(o.subtotal||0)}</strong></div>
+      <div>Shipping: <strong>${money(o.ship||0)}</strong></div>
+      <div>Fees: <strong>${money(o.txFee||0)}</strong></div>
+      <div>${(State.lang==="fr"?"Total TTC":"Grand Total")}: <strong>${money(o.grandTotal ?? o.total)}</strong></div>
+    </div>
+    <script>window.print()</script>
+  </body></html>`;
+}
+function buildPackingHTML(o){
+  const items = Array.isArray(o.items)? o.items : [];
+  return `<!doctype html><html><head><meta charset="utf-8"><title>Packing ${o.id}</title>
+  <style>body{font-family:Inter,Arial,sans-serif;padding:16px} h2{margin:0 0 6px} table{width:100%;border-collapse:collapse} th,td{border:1px solid #ddd;padding:6px}</style>
+  </head><body>
+    <h2>${State.lang==="fr"?"Bon de colisage":"Packing Slip"} — ${o.id}</h2>
+    <div>${t("courier")}: ${o.courier||"—"} &nbsp;&nbsp; ${t("tracking")}: ${o.tracking||"—"}</div>
+    <div>${State.lang==="fr"?"Expédier à":"Ship to"}: ${(o.shipping?.address?.name||o.customerName||"")} — ${(o.shipping?.address?.line1||"")} ${(o.shipping?.address?.city||"")}</div>
+    <hr/>
+    <table><thead><tr><th>${t("items")}</th><th>Qty</th></tr></thead>
+      <tbody>${items.map(it=>`<tr><td>${it.title||it.name||"—"}</td><td>${it.qty||1}</td></tr>`).join("")}</tbody>
+    </table>
+    <script>window.print()</script>
+  </body></html>`;
+}
+$("#printInvoiceBtn").addEventListener("click", ()=>{
+  const o = State.drawer.data; if(!o) return;
+  const w = window.open("", "_blank"); w.document.write(buildInvoiceHTML(o)); w.document.close();
+});
+$("#printPackingBtn").addEventListener("click", ()=>{
+  const o = State.drawer.data; if(!o) return;
+  const w = window.open("", "_blank"); w.document.write(buildPackingHTML(o)); w.document.close();
+});
+
+/* ============ Print PENDING Orders (with QR) ============ */
+function workerURL(orderId){ return location.origin + "/worker.html#scan=" + encodeURIComponent(orderId); }
+function managerURL(orderId){ return location.origin + "/manager.html#scan=" + encodeURIComponent(orderId); }
+function qrIMG(url){ return `https://chart.googleapis.com/chart?cht=qr&chs=140x140&chl=${encodeURIComponent(url)}`; }
+
+function buildPendingOrdersHTML(list){
+  const title = t("pendingOnlyTitle");
+  const rows = list.map(o=>{
+    const receiver = (o.shipping?.address?.name || o.customerName || "");
+    const email = (o.customerEmail || o.shipping?.address?.email || "");
+    const phone = (o.customerPhone || o.shipping?.address?.phone || "");
+    const from = (o.sellerRegion || "—");
+    const to   = (o.shipping?.address?.region || o.customerRegion || o.region || "—");
+    const wURL = workerURL(o.id), mURL = managerURL(o.id);
+    return `
+      <section style="page-break-inside:avoid;border:1px solid #ddd;border-radius:10px;margin:12px 0;padding:12px">
+        <h3 style="margin:0 0 6px">${t("printOrderId")}: ${o.id}</h3>
+        <div style="display:grid;grid-template-columns:1.2fr 1.2fr 1fr;gap:10px;align-items:start">
+          <div>
+            <div><strong>${t("printCustomer")}:</strong> ${o.customerName||"—"}</div>
+            <div><strong>${t("printReceiver")}:</strong> ${receiver||"—"}</div>
+            <div><strong>${t("printEmail")}:</strong> ${email||"—"}</div>
+            <div><strong>${t("printPhone")}:</strong> ${phone||"—"}</div>
+            <div><strong>${t("printFrom")}:</strong> ${from}</div>
+            <div><strong>${t("printTo")}:</strong> ${to}</div>
+            <div><strong>${t("printCreated")}:</strong> ${fmtDate(o.createdAt)}</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;justify-items:center">
+            <div style="text-align:center">
+              <div style="font-weight:800;margin-bottom:4px">${t("printWorkerQR")}</div>
+              <img src="${qrIMG(wURL)}" alt="Worker QR">
+              <div style="font-size:.8rem;margin-top:4px">${wURL}</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-weight:800;margin-bottom:4px">${t("printManagerQR")}</div>
+              <img src="${qrIMG(mURL)}" alt="Manager QR">
+              <div style="font-size:.8rem;margin-top:4px">${mURL}</div>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div><strong>Total:</strong> ${money(o.grandTotal ?? o.total)}</div>
+            <div><strong>Items:</strong> ${Array.isArray(o.items)? o.items.reduce((a,x)=>a+(+x.qty||1),0) : (o.itemsCount||0)}</div>
+          </div>
+        </div>
+      </section>`;
+  }).join("");
+  return `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+  <style>*{box-sizing:border-box} body{font-family:Inter,Arial,sans-serif;padding:16px} h2{margin:0 0 10px} @page{size:auto;margin:12mm}</style>
+  </head><body>
+    <h2>${title}</h2>
+    ${rows || "<p>"+(State.lang==="fr"?"Aucune commande en attente.":"No pending orders.")+"</p>"}
+    <script>window.print()</script>
+  </body></html>`;
+}
+async function printPendingOrders(){
+  for(const o of State.orders){
+    if(!o.customerName || !o.customerEmail){ const u = await getUser(o.userId); if(u){ o.customerName=u.displayName||u.name||""; o.customerEmail=u.email||""; o.customerPhone=u.phone||u.phoneNumber||""; o.customerRegion=u.region||o.region; } }
+    if(o.sellerId && !o.sellerRegion){ const s = await getUser(o.sellerId); if(s){ o.sellerRegion = s.region||""; } }
+  }
+  const pending = State.orders.filter(o=> o.status==="pending");
+  const w = window.open("", "_blank");
+  w.document.write(buildPendingOrdersHTML(pending));
+  w.document.close();
+}
+
+/* ============ CSV Export ============ */
+function exportCSV(onlySelected=false){
+  const rows = [["id","status","region","customer_name","customer_email","seller_name","payment_method","payment_verified","items_count","subtotal_XAF","ship_XAF","txFee_XAF","grandTotal_XAF","createdAt","deliveredAt"]];
+  const list = onlySelected ? State.orders.filter(o=> State.selected.has(o.id)) : State.orders;
+  list.forEach(o=>{
+    const itemsCount = Array.isArray(o.items)? o.items.reduce((a,x)=> a + (+x.qty||1), 0) : (o.itemsCount||0);
+    rows.push([
+      o.id, o.status||"", o.region||"", o.customerName||"", o.customerEmail||"", o.sellerName||"",
+      o.payment?.method||"", !!o.payment?.verified,
+      itemsCount, o.subtotal||"", o.ship||"", o.txFee||"", (o.grandTotal ?? o.total)||"",
+      fmtDate(o.createdAt), fmtDate(o.deliveredAt)
+    ]);
+  });
+  const csv = rows.map(r=> r.map(v=>{
+    const s = (v==null?"":String(v)).replace(/"/g,'""'); return `"${s}"`;
+  }).join(",")).join("\n");
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"}); const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href=url; a.download = onlySelected?"orders_selected.csv":"orders.csv"; a.click(); URL.revokeObjectURL(url);
+}
+
+/* ============ Wire up remaining controls ============ */
+$("#exportBtn").addEventListener("click", ()=> exportCSV(false));
+$("#printPendingBtn").addEventListener("click", printPendingOrders);
+
+/* ============ Initial paint ============ */
+fillRegions();
+applyLang();
+</script>
+</body>
+</html>

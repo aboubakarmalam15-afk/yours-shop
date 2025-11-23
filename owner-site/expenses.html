@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Owner — Expenses</title>
+
+  <!-- Perfect light/dark on mobile -->
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1220">
+
+  <style>
+    :root{
+      --brand:#0f3b66; --accent:#ff9900;
+      --bg:#f6f8fb; --card:#ffffff; --text:#0b1220; --muted:#6b7280; --line:#e5e7eb;
+      --ok:#10b981; --warn:#f59e0b; --danger:#ef4444;
+      --sidebar:#0f3b66; --sidebarText:#eaf2ff; --sidebarActive:#ff9900;
+      --shadow:0 10px 30px rgba(0,0,0,.08);
+    }
+    html[data-theme="dark"]{
+      --bg:#0b1220; --card:#111827; --text:#f7f8fd; --muted:#9aa3b2; --line:#1f2937;
+      --sidebar:#0b1220; --sidebarText:#eaf2ff; --sidebarActive:#ff9900;
+      --shadow:0 10px 30px rgba(0,0,0,.35);
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    a{color:var(--brand);text-decoration:none}
+
+    .layout{min-height:100vh;display:grid;grid-template-columns:260px 1fr}
+    @media (max-width:880px){.layout{grid-template-columns:1fr}}
+
+    /* Sidebar (same vibe as owner) */
+    .side{position:sticky;top:0;height:100vh;background:var(--sidebar);color:var(--sidebarText);
+      display:flex;flex-direction:column;gap:8px;padding:14px 12px;border-right:1px solid rgba(255,255,255,.08)}
+    @media (max-width:880px){
+      .side{position:fixed;inset:0 auto 0 0;width:84%;max-width:320px;left:-100%;transition:left .25s;z-index:30}
+      .side.open{left:0}
+    }
+    .brand{display:flex;align-items:center;gap:10px;padding:6px 8px}
+    .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--brand),#1a5aa0)}
+    nav{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;color:var(--sidebarText);border:1px solid transparent}
+    .nav-item:hover{background:rgba(255,255,255,.06)}
+    .nav-item.active{background:rgba(255,153,0,.18);border-color:rgba(255,153,0,.4);color:#fff}
+    .nav-item svg{width:18px;height:18px;flex:0 0 auto}
+    .spacer{flex:1}
+    .side-controls{display:flex;gap:8px}
+    .ctrl{border:1px solid rgba(255,255,255,.25);background:transparent;color:var(--sidebarText);
+      height:36px;padding:0 10px;border-radius:10px;cursor:pointer;font-weight:700}
+
+    /* Content */
+    .content{display:flex;flex-direction:column;min-width:0}
+    header.top{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--line);
+      display:flex;align-items:center;justify-content:space-between;padding:10px 14px}
+    .welcome{font-weight:900;letter-spacing:.4px;margin:0;text-transform:uppercase;font-size:clamp(1rem,2.8vw,1.4rem)}
+    .top-controls{display:flex;align-items:center;gap:8px}
+    .icon-btn{border:1px solid var(--line);background:transparent;color:var(--text);height:36px;padding:0 10px;border-radius:10px;cursor:pointer;font-weight:700}
+    .danger-btn{border-color:rgba(239,68,68,.45);color:var(--danger)}
+    #backdrop{display:none}
+    @media (max-width:880px){#backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:25} #backdrop.show{display:block}}
+
+    /* KPI strip */
+    .kpis{padding:12px 14px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    @media (max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:520px){.kpis{grid-template-columns:1fr}}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;box-shadow:var(--shadow)}
+    .k{font-size:.9rem;color:var(--muted);margin:0 0 6px;display:flex;align-items:center;gap:6px}
+    .v{font-size:1.5rem;font-weight:800;margin:0}
+    .ok{color:var(--ok)} .warn{color:var(--warn)} .danger{color:var(--danger)}
+
+    /* Panels & grids */
+    .grid{padding:0 14px 16px;display:grid;grid-template-columns:1.4fr 1.6fr;gap:12px}
+    @media (max-width:1100px){.grid{grid-template-columns:1fr}}
+    .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;box-shadow:var(--shadow)}
+    .panel h3{margin:6px 6px 10px;font-size:1.02rem;display:flex;align-items:center;gap:8px;justify-content:space-between}
+    .panel .tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .btn{border:1px solid var(--line);background:transparent;color:var(--text);height:32px;padding:0 10px;border-radius:8px;cursor:pointer;font-weight:700}
+
+    .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media (max-width:840px){.two{grid-template-columns:1fr}}
+
+    label{font-size:.9rem;color:var(--muted);display:block;margin:6px 0 4px}
+    input,select,textarea{width:100%;height:38px;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:10px;padding:6px 10px}
+    textarea{height:84px;resize:vertical}
+
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+    th{position:sticky;top:0;background:var(--card);z-index:1}
+
+    .pill{display:inline-block;padding:.14rem .5rem;border-radius:999px;border:1px solid var(--line);font-size:.75rem}
+    .pill.ok{border-color:rgba(16,185,129,.45);color:var(--ok)}
+    .pill.warn{border-color:rgba(245,158,11,.45);color:var(--warn)}
+    .pill.danger{border-color:rgba(239,68,68,.45);color:var(--danger)}
+
+    .thumb{width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid var(--line)}
+    .note{color:var(--muted);font-size:.9rem}
+  </style>
+</head>
+<body>
+<div class="layout">
+  <!-- Sidebar -->
+  <aside class="side" id="sidebar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"></div>
+      <strong>OWNER</strong>
+    </div>
+    <nav>
+      <a href="index.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 10l9-7 9 7v10a2 2 0 0 1-2 2h-3a 2 2 0 0 1-2-2V14H8v6a 2 2 0 0 1-2 2H3z" stroke-width="2"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <a href="expenses.html" class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M12 8v8"/></svg>
+        <span>Expenses</span>
+      </a>
+      <a href="wallet.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M15 12h6v-4h-6z"/></svg>
+        <span>Wallet</span>
+      </a>
+      <a href="order.html" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 16V8a2 2 0 0 0-1-1.73L13 2.27a2 2 0 0 0-2 0L4 6.27A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a 2 2 0 0 0 2 0l7-4A 2 2 0 0 0 21 16z"/></svg>
+        <span>Orders</span>
+      </a>
+    </nav>
+    <div class="spacer"></div>
+    <div class="side-controls">
+      <button id="sideTheme" class="ctrl">🌓</button>
+      <button id="sideLogout" class="ctrl">Sign out</button>
+    </div>
+  </aside>
+
+  <!-- Backdrop for mobile -->
+  <div id="backdrop"></div>
+
+  <!-- Content -->
+  <main class="content">
+    <header class="top">
+      <h2 class="welcome">EXPENSES & PAYROLL — OWNER</h2>
+      <div class="top-controls">
+        <button id="menuBtn" class="icon-btn">☰</button>
+        <span id="walletBalance" class="icon-btn" title="Wallet">XAF 0</span>
+        <button id="themeToggle" class="icon-btn">🌓</button>
+        <button id="signOutBtn" class="icon-btn danger-btn">Sign out</button>
+      </div>
+    </header>
+
+    <!-- KPIs -->
+    <section class="kpis">
+      <article class="card">
+        <p class="k">Owner Wallet Balance</p>
+        <p id="kpiWallet" class="v">XAF 0</p>
+      </article>
+      <article class="card">
+        <p class="k">This Month — Paid Expenses</p>
+        <p id="kpiMonthPaid" class="v ok">XAF 0</p>
+      </article>
+      <article class="card">
+        <p class="k">Pending Requests (Managers)</p>
+        <p id="kpiPending" class="v warn">0</p>
+      </article>
+      <article class="card">
+        <p class="k">Salaries Due Today</p>
+        <p id="kpiDue" class="v warn">0</p>
+      </article>
+    </section>
+
+    <section class="grid">
+      <!-- Left: Create salary + One-time expense -->
+      <div class="panel">
+        <h3>
+          Create Salary (Recurring)
+          <span class="tools">
+            <button class="btn" id="btnRunPayroll">Run Payroll (process due)</button>
+          </span>
+        </h3>
+        <div class="two">
+          <div>
+            <label>Employee (Manager / Worker)</label>
+            <select id="salaryUser"></select>
+
+            <label>Region</label>
+            <select id="salaryRegion"></select>
+
+            <label>Category</label>
+            <input id="salaryCategory" placeholder="e.g. payroll"/>
+          </div>
+          <div>
+            <label>Monthly Amount (XAF)</label>
+            <input id="salaryAmount" type="number" min="0" step="1" placeholder="100000"/>
+
+            <label>Day of Month (1–28)</label>
+            <input id="salaryDay" type="number" min="1" max="28" value="25"/>
+
+            <label>Start (first due date)</label>
+            <input id="salaryStart" type="date"/>
+          </div>
+        </div>
+        <div class="tools" style="margin-top:8px">
+          <button class="btn" id="btnCreateSalary">Create Salary</button>
+        </div>
+
+        <hr style="border:none;border-top:1px solid var(--line);margin:14px 0"/>
+
+        <h3>Create One-time Expense</h3>
+        <div class="two">
+          <div>
+            <label>Region</label>
+            <select id="expRegion"></select>
+
+            <label>Category</label>
+            <input id="expCategory" placeholder="logistics / ads / refund / ..."/>
+
+            <label>Amount (XAF)</label>
+            <input id="expAmount" type="number" min="0" step="1" placeholder="5000"/>
+          </div>
+          <div>
+            <label>Note</label>
+            <textarea id="expNote" placeholder="short description"></textarea>
+
+            <label>Proof (image URL)</label>
+            <div class="two" style="grid-template-columns:1fr auto">
+              <input id="expProofUrl" placeholder="https://..."/>
+              <button class="btn" id="btnUploadProof">Upload</button>
+            </div>
+          </div>
+        </div>
+        <div class="tools" style="margin-top:8px">
+          <button class="btn" id="btnCreateExpense">Create & Pay Now</button>
+        </div>
+        <p class="note">Pay Now deducts from your wallet and records under <code>users/{ownerUid}/expenses</code>.</p>
+      </div>
+
+      <!-- Right: Salaries list -->
+      <div class="panel">
+        <h3>Active Salaries <span class="tools"><button class="btn" id="btnRefreshSalaries">↻</button></span></h3>
+        <div style="overflow:auto;max-height:420px">
+          <table>
+            <thead>
+              <tr><th>User</th><th>Role</th><th>Region</th><th>Amount</th><th>Next Due</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="salariesBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <!-- Pending manager requests -->
+      <div class="panel">
+        <h3>Pending Expenses (Managers) <span class="tools"><button class="btn" id="btnRefreshPending">↻</button></span></h3>
+        <div style="overflow:auto;max-height:360px">
+          <table>
+            <thead>
+              <tr><th>Created By</th><th>Region</th><th>Type</th><th>Category</th><th>Amount</th><th>Proof</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="pendingBody"></tbody>
+          </table>
+        </div>
+        <p class="note">Managers submit to <code>pendingExpenses</code>. Approve to pay or convert to salary.</p>
+      </div>
+
+      <!-- History -->
+      <div class="panel">
+        <h3>Paid Expenses — History <span class="tools"><button class="btn" id="btnRefreshHistory">↻</button></span></h3>
+        <div style="overflow:auto;max-height:360px">
+          <table>
+            <thead>
+              <tr><th>Date</th><th>Region</th><th>Category</th><th>Amount</th><th>Note</th><th>Proof</th></tr>
+            </thead>
+            <tbody id="historyBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <footer style="padding:16px;color:var(--muted);text-align:center"><small>&copy; <span id="year"></span> Owner Portal</small></footer>
+  </main>
+</div>
+
+<!-- Cloudinary (upload widget) -->
+<script>
+  window.__CLOUDINARY__ = {
+    cloudName: "divjjbwit",
+    uploadPreset: "unsigned_yours_shop",
+    folder: "yours-shop"
+  };
+</script>
+<script src="https://widget.cloudinary.com/v2.0/global/all.js"></script>
+
+<!-- Firebase v8 -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+<script>
+  // Same project as your owner dashboard
+  window.__FIREBASE_CONFIG__ = {
+    apiKey: "AIzaSyCz446b_SZF8L1HykjAeHrc9LK9GVWX4Q4",
+    authDomain: "your-shop-3bdd1.firebaseapp.com",
+    projectId: "your-shop-3bdd1",
+    storageBucket: "your-shop-3bdd1.appspot.com",
+    messagingSenderId: "440558238881"
+  };
+</script>
+
+<script>
+(function(){
+  const REGIONS = ["Adamawa","Centre","East","Far North","Littoral","North","North-West","West","South","South-West"];
+  const $ = s => document.querySelector(s);
+  $("#year").textContent = new Date().getFullYear();
+
+  // Theme + sidebar (simple)
+  function setTheme(t){ document.documentElement.setAttribute("data-theme", t);
+    document.querySelectorAll('meta[name="theme-color"]').forEach(m=>m.setAttribute("content", t==="dark"?"#0b1220":"#ffffff")); }
+  const savedTheme = localStorage.getItem("theme") || (matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");
+  setTheme(savedTheme);
+  $("#themeToggle").onclick = $("#sideTheme").onclick = ()=>{ const t = (document.documentElement.getAttribute("data-theme")==="light"?"dark":"light"); localStorage.setItem("theme",t); setTheme(t); };
+  $("#menuBtn").onclick = ()=>{ $("#sidebar").classList.toggle("open"); $("#backdrop").classList.toggle("show"); };
+  $("#backdrop").onclick = ()=>{ $("#sidebar").classList.remove("open"); $("#backdrop").classList.remove("show"); };
+
+  // Firebase init + gate
+  const app = firebase.apps?.length ? firebase.app() : firebase.initializeApp(window.__FIREBASE_CONFIG__);
+  const auth = firebase.auth(); const db = firebase.firestore();
+
+  let OWNER_UID = null;
+  let WALLET_DOCS = []; // keep array for writes, prefer META/wallet
+
+  function fmtMoney(x){ try{return "XAF " + Number(x||0).toLocaleString();}catch(_){return "XAF "+(x||0)} }
+  // --- NEW: safe numeric parser so strings like "XAF 1,000" don't break comparisons
+  function toNumber(v){
+    if (typeof v === 'number') return v;
+    if (v == null) return 0;
+    const n = Number(String(v).replace(/[^\d.-]/g,''));
+    return isNaN(n) ? 0 : n;
+  }
+
+  // Fill region selects
+  function fillRegions(sel){
+    sel.innerHTML="";
+    REGIONS.forEach(r=>{ const o=document.createElement("option"); o.value=r; o.textContent=r; sel.appendChild(o); });
+  }
+  fillRegions($("#salaryRegion")); fillRegions($("#expRegion"));
+
+  // Load employees (managers + workers)
+  async function loadEmployees(){
+    const usersSnap = await db.collection("users").where("role","in",["manager","worker"]).get();
+    const sel = $("#salaryUser"); sel.innerHTML="";
+    usersSnap.forEach(d=>{
+      const opt = document.createElement("option");
+      const email = d.get("email")||"";
+      const name = d.get("displayName")||email||d.id;
+      opt.value = d.id;
+      opt.textContent = `${name} — ${d.get("role")} — ${d.get("region")||"Unknown"}`;
+      opt.dataset.role = d.get("role")||"";
+      opt.dataset.region = d.get("region")||"";
+      sel.appendChild(opt);
+    });
+  }
+
+  // Wallet helpers — PREFER users/{uid}/META/wallet (exact path you specified)
+  async function discoverWalletDocs(uid){
+    const paths = [
+      db.collection("users").doc(uid).collection("META").doc("wallet"), // preferred
+      db.collection("users").doc(uid).collection("meta").doc("wallet"), // fallback
+    ];
+    const snaps = await Promise.all(paths.map(p=>p.get().catch(()=>null)));
+    const out = [];
+    snaps.forEach((s,i)=>{ if(s && (s.exists || i===0)) out.push(paths[i]); });
+    // if nothing exists, default to preferred META/wallet
+    if(!out.length) out.push(paths[0]);
+    WALLET_DOCS = out;
+  }
+
+  async function readOwnerWallet(){
+    let bal = 0, currency="XAF";
+    for(const ref of WALLET_DOCS){
+      const s = await ref.get().catch(()=>null);
+      if(!s || !s.exists) continue;
+      const data = s.data()||{};
+      // --- UPDATED: allow numeric OR string balances
+      const v = data.balance != null ? toNumber(data.balance) : (data.amount != null ? toNumber(data.amount) : 0);
+      bal = v;
+      currency = data.currency || "XAF";
+      break;
+    }
+    $("#walletBalance").textContent = fmtMoney(bal);
+    $("#kpiWallet").textContent = fmtMoney(bal);
+    // expose numeric for any other checks if needed
+    window.__OWNER_WALLET__ = { balance: bal, currency };
+    return {balance:bal, currency};
+  }
+
+  async function writeOwnerWallet(newBalance){
+    const batch = db.batch();
+    WALLET_DOCS.forEach(ref=> batch.set(ref,{balance:toNumber(newBalance),currency:"XAF",updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true}));
+    await batch.commit();
+  }
+
+  // Auth gate
+  $("#signOutBtn").onclick = $("#sideLogout").onclick = ()=> auth.signOut();
+  auth.onAuthStateChanged(async (u)=>{
+    if(!u) return location.assign("/login.html");
+    OWNER_UID = u.uid;
+    const doc = await db.collection("users").doc(OWNER_UID).get().catch(()=>null);
+    if(!doc || !doc.exists || doc.get("role")!=="owner"){ await auth.signOut(); return; }
+    await discoverWalletDocs(OWNER_UID);
+    await readOwnerWallet();
+    await loadEmployees();
+    await refreshAll();
+  });
+
+  // Cloudinary upload
+  $("#btnUploadProof").onclick = ()=>{
+    const c = window.__CLOUDINARY__||{};
+    const w = window.cloudinary && window.cloudinary.createUploadWidget ? window.cloudinary.createUploadWidget({
+      cloudName:c.cloudName, uploadPreset:c.uploadPreset, folder:c.folder||"yours-shop"
+    }, (err,res)=>{
+      if(!err && res && res.event==="success"){
+        $("#expProofUrl").value = res.info.secure_url;
+      }
+    }) : null;
+    if(w) w.open();
+  };
+
+  // ===== Data models =====
+  // salaries (root): { userId, userRole, region, amount, dayOfMonth, nextDue(Timestamp), active, category, note, createdBy, createdAt, lastPaidAt }
+  // pendingExpenses (root): { createdBy, creatorRole, region, type:'one_time'|'recurring', category, amount, note, proofUrl, status:'pending', createdAt, assigneeUserId(optional), dayOfMonth(optional) }
+  // paid expense record stored at users/{OWNER}/expenses: { amount, region, category, note, proofUrl, createdAt, paidAt, type:'one_time'|'salary', refId }
+
+  // Create salary
+  $("#btnCreateSalary").onclick = async ()=>{
+    const userSel = $("#salaryUser");
+    if(!userSel.value) return alert("Choose an employee");
+    const amount = Number($("#salaryAmount").value||0);
+    const day = Math.min(28, Math.max(1, Number($("#salaryDay").value||1)));
+    const region = $("#salaryRegion").value||"";
+    const category = $("#salaryCategory").value||"payroll";
+    const startStr = $("#salaryStart").value;
+    const startDate = startStr ? new Date(startStr+"T00:00:00") : new Date();
+    // first nextDue = the next occurrence of dayOfMonth on/after start
+    const d = new Date(startDate);
+    const today = new Date(); today.setHours(0,0,0,0);
+    d.setDate(day);
+    if(d < today){ d.setMonth(d.getMonth()+1); } // next month if already passed
+
+    const userId = userSel.value;
+    const userRole = userSel.selectedOptions[0]?.dataset?.role || "";
+
+    const payload = {
+      userId, userRole,
+      region, amount, dayOfMonth:day,
+      nextDue: firebase.firestore.Timestamp.fromDate(d),
+      active:true, category, note:"",
+      createdBy: OWNER_UID,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    await db.collection("salaries").add(payload);
+    alert("Salary created.");
+    await refreshSalaries();
+  };
+
+  // Run payroll: process all salaries with nextDue <= now and active==true
+  $("#btnRunPayroll").onclick = async ()=>{ await runPayroll(); };
+
+  async function runPayroll(){
+    const now = new Date();
+    const snap = await db.collection("salaries").where("active","==",true).get();
+    const due = [];
+    snap.forEach(d=>{
+      const nd = d.get("nextDue");
+      if(nd && nd.toDate && nd.toDate() <= now) due.push({id:d.id, ...d.data()});
+    });
+    if(!due.length){ alert("No salaries due."); return; }
+
+    for(const s of due){
+      await paySalaryDoc(s.id, s).catch(e=>console.warn("pay salary error", e));
+    }
+    alert("Payroll processed.");
+    await refreshAll();
+  }
+
+  async function paySalaryDoc(salaryId, sData){
+    await db.runTransaction(async tx=>{
+      const walletSnap = await tx.get(WALLET_DOCS[0]);
+      const w = walletSnap.exists ? (walletSnap.data()||{}) : {};
+      const balance = toNumber(w.balance);             // UPDATED: robust parse
+      const amt = Number(sData.amount||0);
+      if(balance < amt) throw new Error("Insufficient wallet balance");
+
+      const newBal = balance - amt;
+      tx.set(WALLET_DOCS[0], { balance: newBal, currency:"XAF", updatedAt:firebase.firestore.FieldValue.serverTimestamp() }, {merge:true});
+      for(let i=1;i<WALLET_DOCS.length;i++){
+        tx.set(WALLET_DOCS[i], { balance: newBal, currency:"XAF", updatedAt:firebase.firestore.FieldValue.serverTimestamp() }, {merge:true});
+      }
+
+      const expRef = db.collection("users").doc(OWNER_UID).collection("expenses").doc();
+      tx.set(expRef, {
+        type:"salary",
+        amount: amt,
+        region: sData.region || "Unknown",
+        category: sData.category || "payroll",
+        note: `Monthly salary for ${sData.userRole||"staff"} (${sData.userId})`,
+        proofUrl: "",
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        paidAt: firebase.firestore.FieldValue.serverTimestamp(),
+        refId: salaryId
+      });
+
+      const nd = (sData.nextDue && sData.nextDue.toDate) ? sData.nextDue.toDate() : new Date();
+      const next = new Date(nd); next.setMonth(next.getMonth()+1); next.setDate(sData.dayOfMonth||next.getDate());
+      tx.update(db.collection("salaries").doc(salaryId), { lastPaidAt: firebase.firestore.FieldValue.serverTimestamp(), nextDue: firebase.firestore.Timestamp.fromDate(next) });
+    });
+  }
+
+  // Salaries list
+  async function refreshSalaries(){
+    const body = $("#salariesBody"); body.innerHTML="";
+    const snap = await db.collection("salaries").orderBy("nextDue","asc").get();
+    let dueCount=0;
+    snap.forEach(d=>{
+      const s=d.data();
+      const nd = s.nextDue?.toDate ? s.nextDue.toDate() : null;
+      const isDue = s.active && nd && nd <= new Date();
+      if(isDue) dueCount++;
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${s.userId}</td>
+        <td>${s.userRole||""}</td>
+        <td>${s.region||""}</td>
+        <td>${fmtMoney(s.amount||0)}</td>
+        <td>${nd?nd.toLocaleDateString():''}</td>
+        <td><span class="pill ${s.active?'ok':'danger'}">${s.active?'active':'paused'}</span> ${isDue?'<span class="pill warn">due</span>':''}</td>
+        <td>
+          <button class="btn" data-act="pay" data-id="${d.id}">Pay now</button>
+          <button class="btn" data-act="toggle" data-id="${d.id}">${s.active?'Pause':'Resume'}</button>
+          <button class="btn" data-act="delete" data-id="${d.id}">Delete</button>
+        </td>`;
+      body.appendChild(tr);
+    });
+    $("#kpiDue").textContent = String(dueCount);
+
+    body.onclick = async (e)=>{
+      const b = e.target.closest("button"); if(!b) return;
+      const id = b.getAttribute("data-id"); const act=b.getAttribute("data-act");
+      const ref = db.collection("salaries").doc(id);
+      const doc = await ref.get(); if(!doc.exists) return;
+      const data = doc.data();
+
+      if(act==="pay"){
+        try{ await paySalaryDoc(id, data); alert("Paid."); await refreshAll(); }catch(err){ alert(err.message||String(err)); }
+      }else if(act==="toggle"){
+        await ref.update({active: !data.active}); await refreshSalaries();
+      }else if(act==="delete"){
+        if(confirm("Delete this salary?")){ await ref.delete(); await refreshSalaries(); }
+      }
+    };
+  }
+
+  // Pending (managers)
+  async function refreshPending(){
+    const body=$("#pendingBody"); body.innerHTML="";
+    const snap = await db.collection("pendingExpenses").where("status","==","pending").orderBy("createdAt","desc").get().catch(()=>({empty:true,forEach:()=>{}}));
+    let count=0;
+    snap.forEach(d=>{
+      count++;
+      const p=d.data();
+      const img = p.proofUrl?`<a href="${p.proofUrl}" target="_blank"><img class="thumb" src="${p.proofUrl}"/></a>`:"";
+      const tr=document.createElement("tr");
+      tr.innerHTML = `
+        <td>${p.createdBy||''} <div class="note">${p.creatorRole||''}</div></td>
+        <td>${p.region||''}</td>
+        <td><span class="pill">${p.type||'one_time'}</span></td>
+        <td>${p.category||''}</td>
+        <td>${fmtMoney(p.amount||0)}</td>
+        <td>${img}</td>
+        <td>
+          <button class="btn" data-act="approve" data-id="${d.id}">Approve</button>
+          <button class="btn" data-act="reject" data-id="${d.id}">Reject</button>
+        </td>`;
+      body.appendChild(tr);
+    });
+    $("#kpiPending").textContent = String(count);
+
+    body.onclick = async (e)=>{
+      const b = e.target.closest("button"); if(!b) return;
+      const id = b.getAttribute("data-id");
+      const act = b.getAttribute("data-act");
+      const ref = db.collection("pendingExpenses").doc(id);
+      const doc = await ref.get(); if(!doc.exists) return;
+      const p = doc.data();
+
+      if(act==="reject"){
+        await ref.update({status:"rejected", decidedAt: firebase.firestore.FieldValue.serverTimestamp(), decidedBy: OWNER_UID});
+        await refreshPending();
+        return;
+      }
+      // approve
+      if((p.type||"one_time")==="one_time"){
+        try{
+          await db.runTransaction(async tx=>{
+            const walletSnap = await tx.get(WALLET_DOCS[0]);
+            const w = walletSnap.exists ? (walletSnap.data()||{}) : {};
+            const balance = toNumber(w.balance);          // UPDATED
+            const amt = Number(p.amount||0);
+            if(balance < amt) throw new Error("Insufficient wallet balance");
+
+            const newBal = balance - amt;
+            tx.set(WALLET_DOCS[0], {balance: newBal, currency:"XAF", updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+            for(let i=1;i<WALLET_DOCS.length;i++){
+              tx.set(WALLET_DOCS[i], {balance: newBal, currency:"XAF", updatedAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+            }
+            const expRef = db.collection("users").doc(OWNER_UID).collection("expenses").doc();
+            tx.set(expRef,{
+              type:"one_time",
+              amount: amt,
+              region: p.region||"Unknown",
+              category: p.category||"manager_request",
+              note: p.note||`Approved manager expense (${p.createdBy})`,
+              proofUrl: p.proofUrl||"",
+              createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+              paidAt: firebase.firestore.FieldValue.serverTimestamp(),
+              refId: id
+            });
+            tx.update(ref,{status:"approved", decidedAt: firebase.firestore.FieldValue.serverTimestamp(), decidedBy: OWNER_UID});
+          });
+          alert("Approved & paid.");
+        }catch(err){ alert(err.message||String(err)); }
+      }else{
+        // recurring: convert to salary
+        const day = Math.min(28, Math.max(1, Number(p.dayOfMonth||25)));
+        const start = new Date(); start.setDate(day); if(start < new Date()) start.setMonth(start.getMonth()+1);
+        await db.collection("salaries").add({
+          userId: p.assigneeUserId || (p.createdBy||""),
+          userRole: p.assigneeRole || "worker",
+          region: p.region||"Unknown",
+          amount: Number(p.amount||0),
+          dayOfMonth: day,
+          nextDue: firebase.firestore.Timestamp.fromDate(start),
+          active:true,
+          category: p.category||"payroll",
+          note: p.note||"from manager request",
+          createdBy: OWNER_UID,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        await ref.update({status:"converted", decidedAt: firebase.firestore.FieldValue.serverTimestamp(), decidedBy: OWNER_UID});
+        alert("Approved and converted to salary.");
+      }
+      await readOwnerWallet();
+      await refreshAll();
+    };
+  }
+
+  // History (users/{owner}/expenses) — this month
+  async function refreshHistory(){
+    const body=$("#historyBody"); body.innerHTML="";
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const expSnap = await db.collection("users").doc(OWNER_UID).collection("expenses")
+      .where("createdAt", ">=", firebase.firestore.Timestamp.fromDate(monthStart))
+      .where("createdAt", "<=", firebase.firestore.Timestamp.fromDate(now))
+      .orderBy("createdAt","desc").get().catch(()=>({empty:true,forEach:()=>{}}));
+
+    let monthTotal = 0;
+    expSnap.forEach(d=>{
+      const e = d.data();
+      monthTotal += Number(e.amount||0);
+      const dt = e.paidAt?.toDate ? e.paidAt.toDate() : (e.createdAt?.toDate ? e.createdAt.toDate() : null);
+      const tr=document.createElement("tr");
+      tr.innerHTML = `
+        <td>${dt?dt.toLocaleString():""}</td>
+        <td>${e.region||""}</td>
+        <td>${e.category||""}</td>
+        <td>${fmtMoney(e.amount||0)}</td>
+        <td>${e.note||""}</td>
+        <td>${e.proofUrl?`<a href="${e.proofUrl}" target="_blank">view</a>`:""}</td>
+      `;
+      body.appendChild(tr);
+    });
+    $("#kpiMonthPaid").textContent = fmtMoney(monthTotal);
+  }
+
+  // Create one-time expense (owner)
+  $("#btnCreateExpense").onclick = async ()=>{
+    const region = $("#expRegion").value||"";
+    const category = $("#expCategory").value||"misc";
+    const amount = Number($("#expAmount").value||0);
+    const note = $("#expNote").value||"";
+    const proofUrl = $("#expProofUrl").value||"";
+
+    if(!amount || amount<=0) return alert("Enter a valid amount.");
+
+    try{
+      await db.runTransaction(async tx=>{
+        const walletSnap = await tx.get(WALLET_DOCS[0]);
+        const w = walletSnap.exists ? (walletSnap.data()||{}) : {};
+        const balance = toNumber(w.balance);    // UPDATED
+        if(balance < amount) throw new Error("Insufficient wallet balance");
+
+        const newBal = balance - amount;
+        tx.set(WALLET_DOCS[0], { balance: newBal, currency:"XAF", updatedAt:firebase.firestore.FieldValue.serverTimestamp() }, {merge:true});
+        for(let i=1;i<WALLET_DOCS.length;i++){
+          tx.set(WALLET_DOCS[i], { balance: newBal, currency:"XAF", updatedAt:firebase.firestore.FieldValue.serverTimestamp() }, {merge:true});
+        }
+
+        const expRef = db.collection("users").doc(OWNER_UID).collection("expenses").doc();
+        tx.set(expRef,{
+          type:"one_time",
+          amount, region, category, note, proofUrl,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          paidAt: firebase.firestore.FieldValue.serverTimestamp(),
+          refId: ""
+        });
+      });
+      alert("Expense paid.");
+      $("#expAmount").value=""; $("#expNote").value=""; // quick reset
+      await readOwnerWallet(); await refreshHistory();
+    }catch(err){ alert(err.message||String(err)); }
+  };
+
+  async function refreshAll(){
+    await Promise.all([refreshSalaries(), refreshPending(), refreshHistory(), readOwnerWallet()]);
+  }
+  $("#btnRefreshSalaries").onclick = refreshSalaries;
+  $("#btnRefreshPending").onclick = refreshPending;
+  $("#btnRefreshHistory").onclick = refreshHistory;
+
+})();
+</script>
+</body>
+</html>

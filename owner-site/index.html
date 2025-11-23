@@ -1,0 +1,1985 @@
+<!doctype html>    
+    
+<html lang="en" data-theme="light">                  
+<head>                  
+  <meta charset="utf-8"/>                  
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>                  
+  <title>Owner Dashboard</title>                <!-- Perfect light/dark on mobile -->                <meta name="color-scheme" content="light dark">                  
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">                  
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1220">                <style>                  
+    :root{                  
+      --brand:#0f3b66; --accent:#ff9900;                  
+      --bg:#f6f8fb; --card:#ffffff; --text:#0b1220; --muted:#6b7280; --line:#e5e7eb;                  
+      --ok:#10b981; --warn:#f59e0b; --danger:#ef4444;                  
+      --sidebar:#0f3b66; --sidebarText:#eaf2ff; --sidebarActive:#ff9900;                  
+      --shadow:0 10px 30px rgba(0,0,0,.08);                  
+      /* KPI accent colors */                  
+      --lightGreen:#22c55e;                  
+      --pearGreen:#a3e635;                  
+      --lightYellow:#eab308;                  
+      --pearYellow:#f7e463;                  
+    }                  
+    html[data-theme="dark"]{                  
+      --bg:#0b1220; --card:#111827; --text:#f7f8fd; --muted:#9aa3b2; --line:#1f2937;                  
+      --sidebar:#0b1220; --sidebarText:#eaf2ff; --sidebarActive:#ff9900;                  
+      --shadow:0 10px 30px rgba(0,0,0,.35);                  
+    }                  
+    *{box-sizing:border-box}                  
+    html,body{margin:0;height:100%}                  
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}                  
+    a{color:var(--brand);text-decoration:none}                  
+                  
+    .layout{min-height:100vh;display:grid;grid-template-columns:260px 1fr}                  
+    @media (max-width: 880px){ .layout{grid-template-columns:1fr} }                  
+                  
+    .side{                  
+      position:sticky;top:0;height:100vh;background:var(--sidebar);color:var(--sidebarText);                  
+      display:flex;flex-direction:column;gap:8px;padding:14px 12px;border-right:1px solid rgba(255,255,255,.08)                  
+    }                  
+    @media (max-width: 880px){                  
+      .side{position:fixed;inset:0 auto 0 0;width:84%;max-width:320px;left:-100%;transition:left .25s;z-index:30}                  
+      .side.open{left:0}                  
+    }                  
+    .brand{display:flex;align-items:center;gap:10px;padding:6px 8px}                  
+    .logo{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--brand),#1a5aa0)}                  
+    .brand strong{letter-spacing:.3px}                  
+    nav{display:flex;flex-direction:column;gap:6px;margin-top:10px}                  
+    .nav-item{                  
+      display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;color:var(--sidebarText);                  
+      text-decoration:none;border:1px solid transparent                  
+    }                  
+    .nav-item:hover{background:rgba(255,255,255,.06)}                  
+    .nav-item.active{background:rgba(255,153,0,.18);border-color:rgba(255,153,0,.4);color:#fff}                  
+    .nav-item svg{width:18px;height:18px;flex:0 0 auto}                  
+    .spacer{flex:1}                  
+    .side-controls{display:flex;gap:8px}                  
+    .ctrl{                  
+      border:1px solid rgba(255,255,255,.25);background:transparent;color:var(--sidebarText);                  
+      height:36px;padding:0 10px;border-radius:10px;cursor:pointer;font-weight:700                  
+    }                  
+                  
+    .content{display:flex;flex-direction:column;min-width:0}                  
+    header.top{                  
+      position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--line);                  
+      display:flex;align-items:center;justify-content:space-between;padding:10px 14px                  
+    }                  
+    .welcome{                  
+      font-weight:900;letter-spacing:.4px;margin:0;text-transform:uppercase;font-size:clamp(1rem,2.8vw,1.4rem)                  
+    }                  
+    .top-controls{display:flex;align-items:center;gap:8px}                  
+    .icon-btn{border:1px solid var(--line);background:transparent;color:var(--text);height:36px;padding:0 10px;border-radius:10px;cursor:pointer;font-weight:700}                  
+    .danger-btn{border-color:rgba(239,68,68,.45);color:var(--danger)}                  
+    #backdrop{display:none}                  
+    @media (max-width: 880px){                  
+      #backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:25}                  
+      #backdrop.show{display:block}                  
+    }                  
+                  
+    .filters{                  
+      display:grid;grid-template-columns:repeat(4, minmax(160px,1fr)) auto;gap:10px;padding:12px 14px                  
+    }                  
+    @media (max-width: 1100px){ .filters{grid-template-columns:repeat(2, minmax(160px,1fr)) auto} }                  
+    @media (max-width: 540px){ .filters{grid-template-columns:1fr} }                  
+    select, input[type="date"]{                  
+      width:100%;height:38px;border:1px solid var(--line);background:var(--card);color:var(--text);                  
+      border-radius:10px;padding:6px 10px                  
+    }                  
+    .gran{display:flex;gap:6px;align-items:center;flex-wrap:wrap}                  
+    .toggle{border:1px solid var(--line);background:transparent;color:var(--text);                  
+      height:38px;padding:0 12px;border-radius:10px;cursor:pointer;font-weight:700}                  
+    .toggle.active{background:var(--brand);color:#fff;border-color:var(--brand)}                  
+    .refresh{display:flex;align-items:center;gap:8px}                  
+    .refresh input{transform:translateY(1px)}                  
+                  
+    .kpis{padding:0 14px 14px;display:grid;grid-template-columns:repeat(8,1fr);gap:12px}                  
+    @media (max-width: 1280px){ .kpis{grid-template-columns:repeat(4,1fr)} }                  
+    @media (max-width: 860px){ .kpis{grid-template-columns:repeat(2,1fr)} }                  
+    @media (max-width: 520px){ .kpis{grid-template-columns:1fr} }                  
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;box-shadow:var(--shadow)}                  
+    .k{font-size:.9rem;color:var(--muted);margin:0 0 6px;display:flex;align-items:center;gap:6px}                  
+    .k svg{width:16px;height:16px}                  
+    .v{font-size:1.5rem;font-weight:800;margin:0}                  
+    .ok{color:var(--ok)} .warn{color:var(--warn)} .danger{color:var(--danger)}                  
+                  
+    #kpiSales{ color: var(--lightGreen); }                  
+    #kpiProfit{ color: var(--pearGreen); }                  
+    #kpiTotalOrders{ color: var(--lightGreen); }                  
+    #kpiShipPaid{ color: var(--lightYellow); }                  
+    #kpiShipSpend{ color: var(--lightYellow); }                  
+    #kpiShipNet{ color: var(--pearYellow); }                  
+    #kpiNetAfterExpenses{ color: var(--danger); }                  
+                  
+    /* Keep wallet pill hidden text-wise per your note */                  
+    #walletBalance{ display:none; }                  
+                  
+    .grid{padding:0 14px 16px;display:grid;grid-template-columns:1.6fr 1.4fr;gap:12px}                  
+    @media (max-width: 1100px){ .grid{grid-template-columns:1fr} }                  
+    .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;box-shadow:var(--shadow)}                  
+    .panel h3{margin:6px 6px 10px;font-size:1.02rem;display:flex;align-items:center;gap:8px;justify-content:space-between}                  
+    .panel .tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}                  
+    .btn{border:1px solid var(--line);background:transparent;color:var(--text);height:32px;padding:0 10px;border-radius:8px;cursor:pointer;font-weight:700}                  
+                  
+    .modal{position:fixed;inset:0;display:none;z-index:50}                  
+    .modal.show{display:grid;place-items:center;background:rgba(0,0,0,.45)}                  
+    .modal-card{width:95vw;max-width:1100px;max-height:85vh;overflow:auto;background:var(--card);color:var(--text);                  
+      border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}                  
+    .modal-head{position:sticky;top:0;background:var(--card);display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}                  
+    .modal-body{padding:10px 12px}                  
+    .table{width:100%;border-collapse:collapse}                  
+    .table th,.table td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;white-space:nowrap}                  
+    .table th{position:sticky;top:0;background:var(--card)}                  
+    .table tr:hover td{background:rgba(127,127,127,.06)}                  
+    .warnbox{                  
+      display:none;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.35);                  
+      color:var(--danger);padding:10px 12px;border-radius:10px;margin:10px 14px;font-weight:600                  
+    }                  
+    footer{padding:16px;color:var(--muted);text-align:center}                  
+  </style>              </head>                  
+<body>                  
+<div class="layout">                  
+  <aside class="side" id="sidebar">                  
+    <div class="brand">                  
+      <div class="logo" aria-hidden="true"></div>                  
+      <strong>OWNER</strong>                  
+    </div>                  
+    <nav>                  
+      <a href="#overview" class="nav-item active" id="navOverview" title="Overview">                  
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 10l9-7 9 7v10a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2V14H8v6a2 2 0 0 1-2 2H3z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>                  
+        <span data-i18n="nav.overview">Overview</span>                  
+      </a>                  
+      <a href="#regions" class="nav-item" title="Regions">                  
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 10c0 6-9 12-9 12S3 16 3 10a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>                  
+        <span data-i18n="nav.regions">Regions</span>                  
+      </a>                  
+      <a href="#users" class="nav-item" title="Users">                  
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>                  
+        <span data-i18n="nav.users">Users</span>                  
+      </a>              <a href="customer.html" class="nav-item" title="Customers">                  
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">                  
+      <circle cx="12" cy="8" r="4" stroke-width="2"/><path d="M4 20a8 8 0 0 1 16 0" stroke-width="2"/>                  
+    </svg>                  
+    <span data-i18n="nav.customers">Customers</span>                  
+  </a>                  
+  <a href="manager.html" class="nav-item" title="Managers">                  
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">                  
+      <path d="M12 2l7 4v5c0 5-3.5 9-7 11-3.5-2-7-6-7-11V6l7-4z" stroke-width="2"/>                  
+      <circle cx="12" cy="10" r="3" stroke-width="2"/>                  
+    </svg>                  
+    <span data-i18n="nav.managers">Managers</span>                  
+  </a>                  
+  <a href="seller.html" class="nav-item" title="Sellers">                  
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">                  
+      <path d="M6 7V6a6 6 0 1 1 12 0v1" stroke-width="2"/>                  
+      <rect x="4" y="7" width="16" height="13" rx="2" stroke-width="2"/>                  
+    </svg>                  
+    <span data-i18n="nav.sellers">Sellers</span>                  
+  </a>                  
+  <a href="worker.html" class="nav-item" title="Workers">                  
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">                  
+      <rect x="3" y="7" width="18" height="13" rx="2" stroke-width="2"/>                  
+      <path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" stroke-width="2"/>                  
+    </svg>                  
+    <span data-i18n="nav.workers">Workers</span>                  
+  </a>                  
+              
+  <a href="order.html" class="nav-item" title="Orders">                  
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 16V8a2 2 0 0 0-1-1.73L13 2.27a2 2 0 0 0-2 0L4 6.27A 2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a 2 2 0 0 0 2 0l7-4A 2 2 0 0 0 21 16z"/><path d="M3.27 6.96L12 12l8.73-5.04"/></svg>                  
+    <span data-i18n="nav.orders">Orders</span>                  
+  </a>                  
+              
+  <a href="product-list.html" class="nav-item" title="Products">                  
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">                  
+      <path d="M21 16V8a2 2 0 0 0-2-2h-4l-2-2H9L7 6H5a2 2 0 0 0-2 2v8"/>                  
+      <path d="M3 16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2"/>                  
+    </svg>                  
+    <span>Products</span>                  
+  </a>                  
+              
+  <a href="#wallets" class="nav-item" title="Wallets">                  
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M16 14h4v-4h-4z"/><path d="M4 8h10"/></svg>                  
+    <span data-i18n="nav.wallets">Wallets</span>                  
+  </a>                  
+              
+  <a href="wallet.html" class="nav-item" title="Wallet">                  
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">                  
+      <rect x="3" y="6" width="18" height="12" rx="2" stroke-width="2"/>                  
+      <path d="M15 12h6v-4h-6z" stroke-width="2"/>                  
+      <path d="M5 8h9" stroke-width="2"/>                  
+    </svg>                  
+    <span data-i18n="nav.wallet">Wallet</span>                  
+  </a>                  
+              
+  <a href="message.html" class="nav-item" title="Messaging">                  
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>                  
+    <span data-i18n="nav.messaging">Messaging</span>                  
+  </a>                  
+              
+  <a href="#approvals" class="nav-item" title="Approvals">                  
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5l-4 4V5a2 2 0 0 1 2-2h11"/></svg>                  
+    <span data-i18n="nav.approvals">Approvals</span>                  
+  </a>                  
+  <a href="#reports" class="nav-item" title="Reports">                  
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="7" width="3" height="11"/><rect x="17" y="10" width="3" height="8"/></svg>                  
+    <span data-i18n="nav.reports">Reports</span>                  
+  </a>                  
+  <a href="#settings" class="nav-item" title="Settings">                  
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4"/></svg>                  
+    <span data-i18n="nav.settings">Settings</span>                  
+  </a>                  
+</nav>                  
+<div class="spacer"></div>                  
+<div class="side-controls">                  
+  <button id="sideLang" class="ctrl">EN</button>                  
+  <button id="sideTheme" class="ctrl">🌓</button>                  
+</div>    
+    
+  </aside>                <div id="backdrop"></div>                <main class="content">                  
+    <header class="top">                  
+      <h2 id="greet" class="welcome" data-i18n="dash.greet">                  
+        WELCOME BACK — CEO (Director General • Owner) — ABOUBAKAR MALAM                  
+      </h2>                  
+      <div class="top-controls">                  
+        <button id="menuBtn" class="icon-btn" title="Menu">☰</button>                  
+        <span id="walletBalance" class="icon-btn" title="Wallet">XAF 0</span>                  
+        <button id="langToggle" class="icon-btn">EN</button>                  
+        <button id="themeToggle" class="icon-btn">🌓</button>                  
+        <button id="signOutBtn" class="icon-btn danger-btn" data-i18n="dash.actions.signout">Sign out</button>                  
+      </div>                  
+    </header>              <div id="configWarning" class="warnbox" role="alert"></div>                  
+              
+<!-- Filters -->                  
+<section class="filters" id="overview">                  
+  <select id="regionSelect" aria-label="Region"></select>                  
+  <select id="periodSelect" aria-label="Period">                  
+    <option value="today"  data-i18n="period.today">Today</option>                  
+    <option value="week"   data-i18n="period.week">This Week</option>                  
+    <option value="month"  data-i18n="period.month">This Month</option>                  
+    <option value="year"   data-i18n="period.year">This Year</option>                  
+    <option value="custom" data-i18n="period.custom">Custom Range</option>                  
+  </select>                  
+  <input id="fromDate" type="date" aria-label="From" style="display:none">                  
+  <input id="toDate"   type="date" aria-label="To"   style="display:none">                  
+  <div class="gran">                  
+    <button class="toggle active" data-gran="day"  data-i18n="gran.day">Day</button>                  
+    <button class="toggle"        data-gran="week" data-i18n="gran.week">Week</button>                  
+    <button class="toggle"        data-gran="month"data-i18n="gran.month">Month</button>                  
+    <button class="toggle"        data-gran="year" data-i18n="gran.year">Year</button>                  
+  </div>                  
+  <div class="refresh">                  
+    <label><input type="checkbox" id="autoRefresh"> <span data-i18n="auto.refresh">Auto refresh</span></label>                  
+    <button id="refreshBtn" class="icon-btn">↻</button>                  
+  </div>                  
+</section>                  
+              
+<!-- KPIs -->                  
+<section class="kpis">                  
+  <article class="card"><p class="k">                  
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 20h18"/><path d="M18 8l-5 5-3-3-4 4"/></svg>                  
+    <span data-i18n="kpi.sales">Total Sales</span></p><p id="kpiSales" class="v">XAF 0</p></article>                  
+              
+  <article class="card"><p class="k">                  
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 1v22"/><path d="M19 5l-7 7-4-4-6 6"/></svg>                  
+    <span data-i18n="kpi.profit">Net Profit</span></p><p id="kpiProfit" class="v">XAF 0</p></article>                  
+              
+  <article class="card"><p class="k">                  
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>                  
+    <span data-i18n="kpi.totalOrders">Total Orders</span></p><p id="kpiTotalOrders" class="v">0</p>                  
+  </article>                  
+              
+  <article class="card"><p class="k">                  
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12h18"/><path d="M5 8h14M5 16h10"/></svg>                  
+    <span data-i18n="kpi.pendingSales">Pending Total Sales</span></p><p id="kpiPendingSales" class="v warn">XAF 0</p>                  
+  </article>                  
+  <article class="card"><p class="k">                  
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 1v22"/><path d="M5 12l4 4 10-10"/></svg>                  
+    <span data-i18n="kpi.pendingProfit">Pending Net Profit</span></p><p id="kpiPendingProfit" class="v warn">XAF 0</p>                  
+  </article>                  
+              
+  <article class="card"><p class="k"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M3.6 9a9 9 0 0 1 16.8 0M3 13h18"/></svg>                  
+    <span data-i18n="kpi.pendingOrders">Pending Orders</span></p><p id="kpiPendingOrders" class="v warn">0</p></article>                  
+  <article class="card"><p class="k"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M16 14h4v-4h-4z"/></svg>                  
+    <span data-i18n="kpi.pendingPayouts">Pending Payouts</span></p><p id="kpiPendingPayouts" class="v warn">XAF 0</p></article>                  
+              
+  <article class="card"><p class="k"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>                  
+    <span data-i18n="kpi.customers">Active Customers</span></p><p id="kpiCustomers" class="v">0</p></article>                  
+              
+  <article class="card"><p class="k">                  
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 7V6a6 6 0 1 1 12 0v1"/><rect x="4" y="7" width="16" height="13" rx="2"/></svg>                  
+    <span data-i18n="kpi.sellers">Active Sellers</span></p><p id="kpiSellers" class="v">0</p>                  
+  </article>                  
+              
+  <article class="card"><p class="k">                  
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 7V6a6 6 0 1 1 12 0v1"/><rect x="4" y="7" width="16" height="13" rx="2"/></svg>                  
+    <span data-i18n="kpi.sellersOnline">Sellers Online</span></p><p id="kpiSellersOnline" class="v">0</p>                  
+  </article>                  
+              
+  <article class="card"><p class="k"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4"/></svg>                  
+    <span data-i18n="kpi.managers">Active Managers</span></p><p id="kpiManagers" class="v">0</p></article>                  
+  <article class="card"><p class="k"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l4 7H8l4-7z"/><path d="M5 22h14l-7-11z"/></svg>                  
+    <span data-i18n="kpi.workers">Active Workers</span></p><p id="kpiWorkers" class="v">0</p></article>                  
+              
+  <article class="card"><p class="k">                  
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">                  
+      <path d="M3 3h13v13H3z"/><path d="M16 8h4l1 3v5h-5z"/><circle cx="7.5" cy="18.5" r="1.5"/><circle cx="17.5" cy="18.5" r="1.5"/>                  
+    </svg>                  
+    <span data-i18n="kpi.shippingPaid">Total Shipping Paid</span></p><p id="kpiShipPaid" class="v">XAF 0</p>                  
+  </article>                  
+  <article class="card"><p class="k">                  
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">                  
+      <rect x="3" y="3" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M7 21h10"/>                  
+    </svg>                  
+    <span data-i18n="kpi.shippingSpend">Total Shipping Spend</span></p><p id="kpiShipSpend" class="v">XAF 0</p>                  
+  </article>                  
+  <article class="card"><p class="k">                  
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">                  
+      <path d="M3 12h18"/><path d="M7 12l3 3 7-7"/>                  
+    </svg>                  
+    <span data-i18n="kpi.shippingNet">Shipping Net Profit</span></p><p id="kpiShipNet" class="v ok">XAF 0</p>                  
+  </article>                  
+              
+  <article class="card"><p class="k">                  
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">                  
+      <path d="M3 12h18"/><path d="M9 8h6M9 12h6M9 16h6"/>                  
+    </svg>                  
+    <span data-i18n="kpi.netInclExpenses">Net Profit (Including Expenses)</span></p><p id="kpiNetAfterExpenses" class="v danger">XAF 0</p>                  
+  </article>                  
+</section>                  
+              
+<section class="grid" id="regions">                  
+  <div class="panel">                  
+    <h3><span data-i18n="chart.salesTrend">Sales & Profit — Trend</span>                  
+      <span class="tools">                  
+        <button class="btn" onclick="exportTrendCSV()">CSV</button>                  
+      </span>                  
+    </h3>                  
+    <div style="height:280px"><canvas id="salesTrend"></canvas></div>                  
+  </div>                  
+  <div class="panel">                  
+    <h3><span data-i18n="chart.status">Order Status</span>                  
+      <span class="tools"><button class="btn" onclick="exportStatusCSV()">CSV</button></span>                  
+    </h3>                  
+    <div style="height:280px"><canvas id="orderStatus"></canvas></div>                  
+  </div>                  
+  <div class="panel">                  
+    <h3><span data-i18n="chart.regionSales">Sales by Region</span>                  
+      <span class="tools"><button class="btn" onclick="exportRegionSalesCSV()">CSV</button></span>                  
+    </h3>                  
+    <div style="height:260px"><canvas id="regionSales"></canvas></div>                  
+  </div>                  
+  <div class="panel">                  
+    <h3><span data-i18n="chart.profitRegion">Profit by Region</span>                  
+      <span class="tools"><button class="btn" onclick="exportProfitRegionCSV()">CSV</button></span>                  
+    </h3>                  
+    <div style="height:260px"><canvas id="profitByRegion"></canvas></div>                  
+  </div>                  
+  <div class="panel" id="users">                  
+    <h3><span data-i18n="chart.roles">Users by Role per Region</span>                  
+      <span class="tools"><button class="btn" onclick="exportRolesCSV()">CSV</button></span>                  
+    </h3>                  
+    <div style="height:260px"><canvas id="roleByRegion"></canvas></div>                  
+  </div>                  
+  <div class="panel" id="orders">                  
+    <h3><span data-i18n="chart.payoutsRegion">Payouts by Region</span>                  
+      <span class="tools"><button class="btn" onclick="exportPayoutsRegionCSV()">CSV</button></span>                  
+    </h3>                  
+    <div style="height:260px"><canvas id="payoutsByRegion"></canvas></div>                  
+  </div>                  
+  <div class="panel" id="wallets">                  
+    <h3><span data-i18n="chart.walletsRegion">Wallet Balances by Region</span>                  
+      <span class="tools"><button class="btn" onclick="exportWalletsRegionCSV()">CSV</button></span>                  
+    </h3>                  
+    <div style="height:260px"><canvas id="walletsByRegion"></canvas></div>                  
+  </div>                  
+  <div class="panel">                  
+    <h3><span data-i18n="chart.customerGrowth">Customer Growth</span>                  
+      <span class="tools"><button class="btn" onclick="exportCustomerGrowthCSV()">CSV</button></span>                  
+    </h3>                  
+    <div style="height:260px"><canvas id="customerGrowth"></canvas></div>                  
+  </div>                  
+</section>                  
+              
+<section class="grid" id="messaging">                  
+  <div class="panel">                  
+    <h3><span data-i18n="panel.messaging">Messaging & Broadcasts</span></h3>                  
+    <p class="k"><strong data-i18n="label.inbox">Inbox threads</strong>: <span id="inboxCount">0</span></p>                  
+    <p class="k"><strong data-i18n="label.broadcasts">Broadcasts</strong>: <span id="broadcastCount">0</span></p>                  
+    <div class="tools">                  
+      <button class="btn" onclick="location.href='/messages.html'">Open Inbox</button>                  
+      <button class="btn" onclick="location.href='/broadcasts.html'">New Broadcast</button>                  
+    </div>                  
+  </div>                  
+  <div class="panel" id="approvals">                  
+    <h3><span data-i18n="panel.approvals">Verification & Approbations</span></h3>                  
+    <p class="k"><strong data-i18n="label.pendingProducts">Pending Products</strong>: <span id="pendingProductsCount">0</span></p>                  
+    <p class="k"><strong data-i18n="label.ordersUnderVerification">Orders Under Verification</strong>: <span id="underVerificationCount">0</span></p>                  
+    <div class="tools">                  
+      <button class="btn" onclick="exportApprovalsCSV()">CSV</button>                  
+      <button class="btn" onclick="location.href='/approvals.html'">Open Approvals</button>                  
+    </div>                  
+  </div>                  
+  <div class="panel" id="reports">                  
+    <h3><span data-i18n="panel.reports">Exports & Reports</span></h3>                  
+    <div class="tools" style="flex-wrap:wrap;gap:6px">                  
+      <button class="btn" onclick="exportOrdersCSV()">Export Orders CSV</button>                  
+      <button class="btn" onclick="exportPayoutsCSV()">Export Payouts CSV</button>                  
+      <button class="btn" onclick="exportUsersCSV()">Export Users CSV</button>                  
+      <button class="btn" onclick="exportWalletsCSV()">Export Wallets CSV</button>                  
+      <button class="btn" onclick="exportShippingCSV()">Export Shipping Matrix</button>                  
+    </div>                  
+    <p class="k" style="margin-top:8px"><em data-i18n="note.export">Tip: Use filters above before exporting.</em></p>                  
+  </div>                  
+</section>                  
+              
+<footer><small>&copy; <span id="year"></span> Owner Portal</small></footer>    
+    
+  </main>                  
+</div>              <div class="modal" id="modal">                  
+  <div class="modal-card">                  
+    <div class="modal-head">                  
+      <strong id="modalTitle">Details</strong>                  
+      <div class="modal-tools">                  
+        <button class="btn" id="modalCsvBtn">CSV</button>                  
+        <button class="btn" id="modalClose">✕</button>                  
+      </div>                  
+    </div>                  
+    <div class="modal-body">                  
+      <div style="overflow:auto">                  
+        <table class="table" id="modalTable">                  
+          <thead></thead>                  
+          <tbody></tbody>                  
+        </table>                  
+      </div>                  
+    </div>                  
+  </div>                  
+</div>              <script>                  
+  window.__CLOUDINARY__ = {                  
+    cloudName: "divjjbwit",                  
+    uploadPreset: "unsigned_yours_shop",                  
+    folder: "yours-shop"                  
+  };                  
+</script>              <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>              <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>              <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>              <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>              <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>              <script>                  
+  (function(){                  
+    try{                  
+      var path = (window.location && window.location.pathname) || "";                  
+      if (path && /\/dashboard\.html$/i.test(path)) {                  
+        window.location.replace(path.replace(/dashboard\.html$/i, "index.html"));                  
+      }                  
+    }catch(e){}                  
+  })();                  
+</script>              <script>                  
+  window.__FIREBASE_CONFIG__ = {                  
+    apiKey: "AIzaSyCz446b_SZF8L1HykjAeHrc9LK9GVWX4Q4",                  
+    authDomain: "your-shop-3bdd1.firebaseapp.com",                  
+    projectId: "your-shop-3bdd1",                  
+    storageBucket: "your-shop-3bdd1.appspot.com",                  
+    messagingSenderId: "440558238881",                  
+    databaseURL: "https://your-shop-3bdd1-default-rtdb.firebaseio.com"                  
+  };                  
+</script>              <script>                  
+/* ======================= I18N / THEME / REGION HELPERS ======================= */                  
+const I18N = {                  
+  en:{                  
+    "dash.greet":"WELCOME BACK — CEO (Director General • Owner) — ABOUBAKAR MALAM",                  
+    "dash.actions.signout":"Sign out",                  
+    "period.today":"Today","period.week":"This Week","period.month":"This Month","period.year":"This Year","period.custom":"Custom Range",                  
+    "gran.day":"Day","gran.week":"Week","gran.month":"Month","gran.year":"Year",                  
+    "auto.refresh":"Auto refresh",                  
+    "kpi.sales":"Total Sales","kpi.profit":"Net Profit","kpi.pendingOrders":"Pending Orders","kpi.pendingPayouts":"Pending Payouts",                  
+    "kpi.customers":"Active Customers","kpi.sellers":"Active Sellers","kpi.managers":"Active Managers","kpi.workers":"Active Workers",                  
+    "kpi.totalOrders":"Total Orders",                  
+    "kpi.pendingSales":"Pending Total Sales",                  
+    "kpi.pendingProfit":"Pending Net Profit",                  
+    "kpi.shippingPaid":"Total Shipping Paid",                  
+    "kpi.shippingSpend":"Total Shipping Spend",                  
+    "kpi.shippingNet":"Shipping Net Profit",                  
+    "kpi.netInclExpenses":"Net Profit (Including Expenses)",                  
+    "chart.salesTrend":"Sales & Profit — Trend","chart.status":"Order Status","chart.regionSales":"Sales by Region","chart.profitRegion":"Profit by Region",                  
+    "chart.roles":"Users by Role per Region","chart.payoutsRegion":"Payouts by Region","chart.walletsRegion":"Wallet Balances by Region","chart.customerGrowth":"Customer Growth",                  
+    "panel.messaging":"Messaging & Broadcasts","panel.approvals":"Verification & Approvals","panel.reports":"Exports & Reports",                  
+    "label.inbox":"Inbox threads","label.broadcasts":"Broadcasts","label.pendingProducts":"Pending Products","label.ordersUnderVerification":"Orders Under Verification",                  
+    "note.export":"Tip: Use filters above before exporting.",                  
+    "region.all":"All Regions",                  
+    "nav.overview":"Overview","nav.regions":"Regions","nav.users":"Users","nav.orders":"Orders","nav.wallets":"Wallets","nav.messaging":"Messaging","nav.approvals":"Approvals","nav.reports":"Reports","nav.settings":"Settings",                  
+    "nav.customers":"Customers","nav.managers":"Managers","nav.sellers":"Sellers","nav.workers":"Workers",                  
+    "nav.wallet":"Wallet",                  
+    "err.config":"Firebase config is missing or placeholder.",                  
+    "err.index":"A Firestore composite index is required for this query. Create it in the console.",                  
+    "modal.orders":"Orders","modal.payouts":"Payouts","modal.users":"Users","modal.wallets":"Wallets",                  
+    "kpi.sellersOnline":"Sellers Online"                  
+  },                  
+  fr:{                  
+    "dash.greet":"BON RETOUR — PDG (Directeur Général • Propriétaire) — ABOUBAKAR MALAM",                  
+    "dash.actions.signout":"Se déconnecter",                  
+    "period.today":"Aujourd’hui","period.week":"Cette semaine","period.month":"Ce mois","period.year":"Cette année","period.custom":"Période personnalisée",                  
+    "gran.day":"Jour","gran.week":"Semaine","gran.month":"Mois","gran.year":"Année",                  
+    "auto.refresh":"Rafraîchissement auto",                  
+    "kpi.sales":"Ventes totales","kpi.profit":"Bénéfice net","kpi.pendingOrders":"Commandes en attente","kpi.pendingPayouts":"Paiements en attente",                  
+    "kpi.customers":"Clients actifs","kpi.sellers":"Vendeurs actifs","kpi.managers":"Managers actifs","kpi.workers":"Travailleurs actifs",                  
+    "kpi.totalOrders":"Total commandes",                  
+    "kpi.pendingSales":"Ventes en attente",                  
+    "kpi.pendingProfit":"Bénéfice net en attente",                  
+    "kpi.shippingPaid":"Frais d’expédition payés",                  
+    "kpi.shippingSpend":"Coût d’expédition",                  
+    "kpi.shippingNet":"Profit net d’expédition",                  
+    "kpi.netInclExpenses":"Bénéfice net (incl. dépenses)",                  
+    "chart.salesTrend":"Ventes & Profit — Tendances","chart.status":"Statut des commandes","chart.regionSales":"Ventes par région","chart.profitRegion":"Profit par région",                  
+    "chart.roles":"Utilisateurs par rôle et région","chart.payoutsRegion":"Paiements par région","chart.walletsRegion":"Soldes de portefeuille par région","chart.customerGrowth":"Croissance des clients",                  
+    "panel.messaging":"Messagerie & Annonces","panel.approvals":"Vérifications & Approbations","panel.reports":"Exports & Rapports",                  
+    "label.inbox":"Conversations","label.broadcasts":"Diffusions","label.pendingProducts":"Produits en attente","label.ordersUnderVerification":"Commandes en vérification",                  
+    "note.export":"Astuce : utilisez les filtres avant d’exporter.",                  
+    "region.all":"Toutes les régions",                  
+    "nav.overview":"Aperçu","nav.regions":"Régions","nav.users":"Utilisateurs","nav.orders":"Commandes","nav.wallets":"Portefeuilles","nav.messaging":"Messagerie","nav.approvals":"Approbations","nav.reports":"Rapports","nav.settings":"Paramètres",                  
+    "nav.customers":"Clients","nav.managers":"Managers","nav.sellers":"Vendeurs","nav.workers":"Travailleurs",                  
+    "nav.wallet":"Portefeuille",                  
+    "err.config":"La configuration Firebase est absente ou fictive.",                  
+    "err.index":"Un index composite Firestore est requis pour cette requête. Créez-le dans la console.",                  
+    "modal.orders":"Commandes","modal.payouts":"Paiements","modal.users":"Utilisateurs","modal.wallets":"Portefeuilles",                  
+    "kpi.sellersOnline":"Vendeurs en ligne"                  
+  }                  
+};                  
+const REGIONS = [                  
+  {en:"Adamawa", fr:"Adamaoua"},                  
+  {en:"Centre", fr:"Centre"},                  
+  {en:"East", fr:"Est"},                  
+  {en:"Far North", fr:"Extrême-Nord"},                  
+  {en:"Littoral", fr:"Littoral"},                  
+  {en:"North", fr:"Nord"},                  
+  {en:"North-West", fr:"Nord-Ouest"},                  
+  {en:"West", fr:"Ouest"},                  
+  {en:"South", fr:"Sud"},                  
+  {en:"South-West", fr:"Sud-Ouest"}                  
+];                  
+                  
+const REGION_ALIASES = {                  
+  "adamaoua":"Adamawa","adamawa":"Adamawa","ngaoundéré":"Adamawa","ngaoundere":"Adamawa",                  
+  "centre":"Centre","center":"Centre","yaoundé":"Centre","yaounde":"Centre",                  
+  "est":"East","east":"East","bertoua":"East",                  
+  "extrême-nord":"Far North","extreme-nord":"Far North","far north":"Far North","maroua":"Far North",                  
+  "littoral":"Littoral","douala":"Littoral",                  
+  "nord":"North","north":"North","garoua":"North",                  
+  "nord-ouest":"North-West","north-west":"North-West","bamenda":"North-West",                  
+  "ouest":"West","west":"West","bafoussam":"West",                  
+  "sud":"South","south":"South","ebolowa":"South",                  
+  "sud-ouest":"South-West","south-west":"South-West","buea":"South-West"                  
+};                  
+function normalizeRegion(v){ if(!v) return ""; const key=String(v).trim().toLowerCase(); return REGION_ALIASES[key] || v; }                  
+function orderRegion(o){ return normalizeRegion(o.region || o.destinationRegion || o.sellerRegion || ""); }                  
+function regionMatches(o, selected){ if (selected==="ALL") return true; return orderRegion(o)===normalizeRegion(selected); }                  
+
+/* === NEW: Status normalization & keys (keeps visual text unchanged) === */
+const STATUS_KEYS = ["under_verification","pending","delivered_to_company","in_transit","out_for_delivery","ready_for_pickup","completed","cancelled"];
+function normalizeStatus(s){
+  const v = String(s||"").trim().toLowerCase().replace(/\s+/g,"_");
+  if (v==="complete" || v==="completed") return "completed";
+  if (v==="cancel" || v==="cancelled" || v==="canceled") return "cancelled";
+  if (v==="intransit") return "in_transit";
+  if (v==="packed") return "in_transit";
+  return STATUS_KEYS.includes(v) ? v : "pending";
+}
+function statusLabel(key, lang){
+  const mapEn = {
+    under_verification:"Under Verification",
+    pending:"Pending",
+    delivered_to_company:"Delivered to Company",
+    in_transit:"In Transit",
+    out_for_delivery:"Out for Delivery",
+    ready_for_pickup:"Ready for Pickup",
+    completed:"Completed",
+    cancelled:"Cancelled"
+  };
+  const mapFr = {
+    under_verification:"Sous vérification",
+    pending:"En attente",
+    delivered_to_company:"Livré à l’entreprise",
+    in_transit:"En transit",
+    out_for_delivery:"En livraison",
+    ready_for_pickup:"Prête au retrait",
+    completed:"Terminée",
+    cancelled:"Annulée"
+  };
+  return (lang==="fr" ? mapFr[key] : mapEn[key]) || key;
+}
+
+const $ = (s)=>document.querySelector(s);                  
+const State = {                  
+  lang: localStorage.getItem("lang") || (navigator.language?.startsWith("fr") ? "fr" : "en"),                  
+  theme: localStorage.getItem("theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"),                  
+  region: "ALL",                  
+  period: "today",                  
+  granularity: "day",                  
+  from:null, to:null,                  
+  autoTimer:null                  
+};                  
+/* expose so presence counters can read current region without reload */                  
+window.State = State;                  
+window.__getSelectedRegion = () => State.region;                  
+                  
+function t(k){ return (I18N[State.lang] && I18N[State.lang][k]) || k; }                  
+function applyLang(){                  
+  document.documentElement.setAttribute("lang", State.lang);                  
+  document.querySelectorAll("[data-i18n]").forEach(el=>{ el.textContent = t(el.getAttribute("data-i18n")); });                  
+  $("#langToggle").textContent = State.lang.toUpperCase();                  
+  $("#sideLang").textContent  = State.lang.toUpperCase();                  
+  document.querySelectorAll(".nav-item span").forEach(span=>{                  
+    const key = span.getAttribute("data-i18n"); if(key) span.textContent = t(key);                  
+  });                  
+  $("#periodSelect").querySelectorAll("option").forEach(o=>{                  
+    const key = o.getAttribute("data-i18n");                  
+    if(key) o.textContent = t(key);                  
+  });                  
+  fillRegions();                  
+}                  
+function applyTheme(){                  
+  document.documentElement.setAttribute("data-theme", State.theme);                  
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{                  
+    m.setAttribute("content", State.theme==="dark" ? "#0b1220" : "#ffffff");                  
+  });                  
+  $("#themeToggle").textContent="🌓"; $("#sideTheme").textContent="🌓";                  
+}                  
+$("#langToggle").addEventListener("click", ()=>{ State.lang = State.lang==="en" ? "fr" : "en"; localStorage.setItem("lang", State.lang); applyLang(); rebuildCharts(); });                  
+$("#sideLang").addEventListener("click", ()=>{ State.lang = State.lang==="en" ? "fr" : "en"; localStorage.setItem("lang", State.lang); applyLang(); rebuildCharts(); });                  
+$("#themeToggle").addEventListener("click", ()=>{ State.theme = State.theme==="light" ? "dark" : "light"; localStorage.setItem("theme", State.theme); applyTheme(); });                  
+$("#sideTheme").addEventListener("click", ()=>{ State.theme = State.theme==="light" ? "dark" : "light"; localStorage.setItem("theme", State.theme); applyTheme(); });                  
+applyLang(); applyTheme();                  
+$("#year").textContent = new Date().getFullYear();                  
+$("#menuBtn").addEventListener("click", ()=>{                  
+  $("#sidebar").classList.toggle("open");                  
+  $("#backdrop").classList.toggle("show");                  
+});                  
+$("#backdrop").addEventListener("click", ()=>{                  
+  $("#sidebar").classList.remove("open");                  
+  $("#backdrop").classList.remove("show");                  
+});                  
+                  
+function fillRegions(){                  
+  const sel = $("#regionSelect");                  
+  const prev = State.region;                  
+  sel.innerHTML="";                  
+  const optAll = document.createElement("option"); optAll.value="ALL"; optAll.textContent = t("region.all"); sel.appendChild(optAll);                  
+  REGIONS.forEach(r=>{                  
+    const o = document.createElement("option");                  
+    o.value = r.en; o.textContent = (State.lang==="fr" ? r.fr : r.en);                  
+    sel.appendChild(o);                  
+  });                  
+  sel.value = prev;                  
+}                  
+                  
+/* ======================= PERIOD / GRANULARITY ======================= */                  
+const periodSel = $("#periodSelect");                  
+const fromDate  = $("#fromDate");                  
+const toDate    = $("#toDate");                  
+periodSel.addEventListener("change", ()=>{                  
+  State.period = periodSel.value;                  
+  const cust = State.period==="custom";                  
+  fromDate.style.display = cust ? "" : "none";                  
+  toDate.style.display   = cust ? "" : "none";                  
+  if(!cust){ computeRangeFromPreset(); run(); }                  
+});                  
+fromDate.addEventListener("change", ()=>{ State.from = new Date(fromDate.value); if(State.to) run(); });                  
+toDate.addEventListener("change",   ()=>{ State.to   = new Date(toDate.value);   if(State.from) run(); });                  
+                  
+/* ✅ Region select auto-refreshes (no full page reload) */                  
+const regionEl = $("#regionSelect");                  
+function onRegionChange(){                  
+  State.region = regionEl.value;                  
+  run(); // refresh data only                  
+  // Update presence KPIs immediately as well (region-aware)                  
+  if (window.__presenceRecomputeCustomers) window.__presenceRecomputeCustomers();                  
+  if (window.__presenceRecomputeSellers)   window.__presenceRecomputeSellers();                  
+}                  
+regionEl.addEventListener("change", onRegionChange);                  
+regionEl.addEventListener("input", onRegionChange); // for some mobile UIs                  
+                  
+document.querySelectorAll(".gran .toggle").forEach(btn=>{                  
+  btn.addEventListener("click", ()=>{                  
+    document.querySelectorAll(".gran .toggle").forEach(b=>b.classList.remove("active"));                  
+    btn.classList.add("active");                  
+    State.granularity = btn.dataset.gran;                  
+    rebuildCharts(); // uses already-fetched RAW                  
+  });                  
+});                  
+$("#refreshBtn").addEventListener("click", ()=> run());                  
+$("#autoRefresh").addEventListener("change", (e)=>{                  
+  if(e.target.checked){ State.autoTimer = setInterval(run, 60000); }                  
+  else { clearInterval(State.autoTimer); State.autoTimer=null; }                  
+});                  
+function computeRangeFromPreset(){                  
+  const now = new Date(); const start = new Date(now);                  
+  switch(State.period){                  
+    case "today": start.setHours(0,0,0,0); State.from=start; State.to=now; State.granularity="day"; break;                  
+    case "week": { const d=new Date(now); const wd=d.getDay()||7; d.setHours(0,0,0,0); d.setDate(d.getDate()-wd+1); State.from=d; State.to=now; State.granularity="day"; break; }                  
+    case "month":{ const d=new Date(now.getFullYear(), now.getMonth(), 1); State.from=d; State.to=now; State.granularity="day"; break; }                  
+    case "year": { const d=new Date(now.getFullYear(), 0, 1); State.from=d; State.to=now; State.granularity="month"; break; }                  
+  }                  
+}                  
+State.period="today"; computeRangeFromPreset();                  
+</script>              <script>                  
+/* ======================= FIREBASE INIT / OWNER GATE ======================= */                  
+let auth=null, db=null;                  
+(function initFirebase(){                  
+  const cfg = window.__FIREBASE_CONFIG__;                  
+  if(!cfg || /YOUR_/.test(JSON.stringify(cfg))){                  
+    const w=$("#configWarning"); if(w){ w.style.display="block"; w.textContent = t("err.config"); }                  
+  }                  
+  try{                  
+    const app = firebase.apps?.length ? firebase.app() : firebase.initializeApp(cfg);                  
+    auth = firebase.auth(); auth.useDeviceLanguage();                  
+    db   = firebase.firestore();                  
+    window.db = db;                  
+  }catch(e){                  
+    console.error(e);                  
+    const w=$("#configWarning"); if(w){ w.style.display="block"; w.textContent = t("err.config"); }                  
+  }                  
+})();                  
+$("#signOutBtn").addEventListener("click", ()=> auth?.signOut());                  
+auth.onAuthStateChanged(async (user)=>{                  
+  if(!user) return location.assign("/login.html");                  
+  try{                  
+    const doc = await db.collection("users").doc(user.uid).get();                  
+    if(!doc.exists || doc.get("role")!=="owner"){ await auth.signOut(); return; }                  
+    window.OWNER_UID = user.uid;                  
+    window.__ownerRegion = doc.get("region") || "Unknown";                  
+  }catch(e){ console.warn(e); }                  
+  if(user.displayName){                  
+    $("#greet").textContent = (State.lang==="fr"                  
+      ? `BON RETOUR — PDG (Directeur Général • Propriétaire) — ${user.displayName.toUpperCase()}`                  
+      : `WELCOME BACK — CEO (Director General • Owner) — ${user.displayName.toUpperCase()}`);                  
+  }                  
+  run();                  
+});                  
+</script>              <script>                  
+/* ======================= DATA FETCH (REGION-AWARE) ======================= */                  
+const XT = firebase.firestore.Timestamp;                  
+function ts(d){ return XT.fromDate(d); }                  
+                  
+let RAW = {                  
+  orders:[], payouts:[],                  
+  users:{ customers:[], sellers:[], workers:[], managers:[] },                  
+  gift:{ active:0, redeemed:0 },                  
+  inboxCount:0, broadcastCount:0,                  
+  wallets:[], walletsByRegion:new Map(),                  
+  walletRowsByRegion:new Map(),                  
+  customerGrowthMeta:null,                  
+  expenses:[],                  
+  /* NEW: flat list of items across all orders in range */
+  items:[]
+};                  
+
+/* live listeners for items */
+let __itemUnsubs = [];
+function clearItemListeners(){
+  try{ __itemUnsubs.forEach(u=>u&&u()); }catch(_){}
+  __itemUnsubs = [];
+}
+
+/* === NEW: Fallback helpers – derive per-item lines from arrays in the order doc === */
+function extractItemsFromOrder(order){
+  if (!order || typeof order !== "object") return [];
+  const arrays = [order.items, order.cart, order.basket, order.lines, order.products];
+  for (const arr of arrays){
+    if (Array.isArray(arr) && arr.length) return arr;
+  }
+  if (order.itemsMap && typeof order.itemsMap === "object"){
+    try{ return Object.values(order.itemsMap); }catch(_){ return []; }
+  }
+  return [];
+}
+function mapOrderArrayItems(order, orderPath){
+  const out = [];
+  const arr = extractItemsFromOrder(order);
+  if (!arr || !arr.length) return out;
+  arr.forEach((it, idx)=>{
+    const stRaw = (it && (it.status || it.state)) || order.status || "pending";
+    const st    = normalizeStatus(stRaw);
+    const price = +it.price || 0;
+    const qty   = +it.qty || +it.quantity || +it.qtyOrdered || 1;
+    const amount = +it.subtotal || +it.total || (price * qty);
+    out.push({
+      orderId: order.id,
+      orderPath,
+      id: it.id || String(idx),
+      _path: `${orderPath}#${idx}`, // pseudo-path; only used for uniqueness
+      status: st,
+      deliveredAt: it.deliveredAt || order.deliveredAt || null,
+      deliveredBy: it.deliveredBy || null,
+      subtotal: +amount || 0,
+      platformFee: (typeof it.platformFee === "number") ? it.platformFee : undefined,
+      region: order.region || order.destinationRegion || order.sellerRegion || "Unknown",
+      createdAt: order.createdAt || null
+    });
+  });
+  return out;
+}
+
+async function fetchData(){                  
+  const {from,to} = State;                  
+                  
+  const orderBase = db.collection("orders").where("createdAt", ">=", ts(from)).where("createdAt", "<=", ts(to));                  
+  const ordersQ   = orderBase;                  
+                  
+  const payoutBase = db.collection("payouts").where("createdAt", ">=", ts(from)).where("createdAt", "<=", ts(to));                  
+  const payoutsQ   = payoutBase;                  
+                  
+  const [ordSnap, paySnap, custSnap, sellSnap, workSnap, mgrSnap, giftSnap, msgSnap, bcastSnap] = await Promise.all([                  
+    ordersQ.get(),                  
+    payoutsQ.get(),                  
+    db.collection("users").where("role","==","customer").get(),                  
+    db.collection("users").where("role","==","seller").get(),                  
+    db.collection("users").where("role","==","worker").get(),                  
+    db.collection("users").where("role","==","manager").get(),                  
+    db.collection("giftCards").get().catch(()=>({ empty:true, docs:[] })),                  
+    db.collection("messages").get().catch(()=>({ empty:true, size:0 })),                  
+    db.collection("broadcasts").get().catch(()=>({ empty:true, size:0 }))                  
+  ]);                  
+                  
+  RAW.orders = ordSnap.docs.map(d=>({ id:d.id, _path:d.ref.path, ...d.data() }));                  
+  RAW.payouts = paySnap.docs.map(d=>({ id:d.id, ...d.data() }));                  
+  RAW.users.customers = custSnap.docs.map(d=>({ id:d.id, ...d.data() }));                  
+  RAW.users.sellers   = sellSnap.docs.map(d=>({ id:d.id, ...d.data() }));                  
+  RAW.users.workers   = workSnap.docs.map(d=>({ id:d.id, ...d.data() }));                  
+  RAW.users.managers  = mgrSnap.docs.map(d=>({ id:d.id, ...d.data() }));                  
+                  
+  RAW.gift.active   = giftSnap.docs.filter(d=>d.get("active")===true && d.get("redeemed")!==true).length;                  
+  RAW.gift.redeemed = giftSnap.docs.filter(d=>d.get("redeemed")===true).length;                  
+                  
+  RAW.inboxCount    = msgSnap.size || 0;                  
+  RAW.broadcastCount= bcastSnap.size || 0;                  
+                  
+  /* ✅ WALLET TOTALS (DIRECT READS: users/{uid}/meta/wallet) */                  
+  RAW.wallets = [];                  
+  RAW.walletsByRegion = new Map();                  
+  RAW.walletRowsByRegion = new Map();                  
+                  
+  const allRoleDocs = [...custSnap.docs, ...sellSnap.docs, ...workSnap.docs, ...mgrSnap.docs];                  
+  const walletJobs = allRoleDocs.map(async uDoc=>{                  
+    const regionRaw = uDoc.get("region") || "Unknown";                  
+    const regionKey = normalizeRegion(regionRaw) || "Unknown";                  
+    const wDoc = await uDoc.ref.collection("meta").doc("wallet").get().catch(()=>null);                  
+    const bal = (wDoc && wDoc.exists) ? (+wDoc.get("balance")||0) : 0;                  
+    const displayName = uDoc.get("displayName") || "";                  
+    const email = uDoc.get("email") || "";                  
+    const uid = uDoc.id;                  
+    const role = uDoc.get("role") || "";                  
+    RAW.wallets.push({ uid, displayName, email, balance:bal, region:regionKey, role });                  
+    RAW.walletsByRegion.set(regionKey, (RAW.walletsByRegion.get(regionKey)||0) + bal);                  
+    const arr = RAW.walletRowsByRegion.get(regionKey) || [];                  
+    arr.push({ uid, name:displayName, email, region:regionKey, balance:bal, role });                  
+    RAW.walletRowsByRegion.set(regionKey, arr);                  
+  });                  
+  await Promise.all(walletJobs);                  
+
+  /* ===== NEW: Read items per order (orders/{orderId}/items/{itemId}) ===== */
+  RAW.items = [];
+  clearItemListeners();
+
+  // helper to compute amounts per item
+  function pickItemAmount(itemData, orderData){
+    const price = +itemData.price || 0;
+    const qty   = +itemData.qty   || +itemData.quantity || 1;
+    const direct = +itemData.subtotal || +itemData.total || (price*qty);
+    if (direct>0) return direct;
+    const orderSub = +orderData.subtotal || 0;
+    // fall back: if no per-item amount, we'll prorate later — return 0 now
+    return 0;
+  }
+
+  async function readItemsForOrder(order){
+    const orderPath = order._path || (`orders/${order.id}`);
+    let ref;
+    try{ ref = db.doc(orderPath); }catch(_){ ref = db.collection("orders").doc(order.id); }
+    let snap;
+    try{
+      snap = await ref.collection("items").get();
+    }catch(_){
+      snap = { empty:true, forEach:()=>{} };
+    }
+    const tmp = [];
+    if (!snap.empty){
+      snap.forEach(doc=>{
+        const d = doc.data() || {};
+        const st = normalizeStatus(d.status || "pending");
+        const amt = pickItemAmount(d, order);
+        tmp.push({
+          orderId: order.id,
+          orderPath,
+          id: doc.id,
+          _path: doc.ref.path,
+          status: st,
+          deliveredAt: d.deliveredAt || order.deliveredAt || null,
+          deliveredBy: d.deliveredBy || null,
+          subtotal: +amt || 0,
+          platformFee: (typeof d.platformFee==="number") ? d.platformFee : undefined,
+          region: order.region || order.destinationRegion || order.sellerRegion || "Unknown",
+          createdAt: order.createdAt || null
+        });
+      });
+    } else {
+      // 🔁 Fallback: derive per-item lines from arrays in the order document (items/cart/basket/lines/products/itemsMap)
+      const fromArray = mapOrderArrayItems(order, orderPath);
+      if (fromArray && fromArray.length){
+        tmp.push(...fromArray);
+      }
+    }
+    if (tmp.length===0){
+      // no items yet: create a virtual pending item so dashboard shows it
+      tmp.push({
+        orderId: order.id,
+        orderPath,
+        id: "auto_1",
+        _path: `${orderPath}/items/auto_1`,
+        status: "pending",
+        deliveredAt: null,
+        deliveredBy: null,
+        subtotal: +order.subtotal || 0,
+        platformFee: undefined,
+        region: order.region || order.destinationRegion || order.sellerRegion || "Unknown",
+        createdAt: order.createdAt || null
+      });
+    }
+    // profit share per item
+    const sumSub = Math.max(1, tmp.reduce((a,x)=>a+(+x.subtotal||0),0));
+    const orderFee = (typeof order.platformFee==="number") ? +order.platformFee : (0.10 * sumSub);
+    tmp.forEach(it=>{
+      it.calcProfit = (typeof it.platformFee==="number") ? +it.platformFee : (orderFee * ((+it.subtotal||0)/sumSub));
+    });
+
+    RAW.items.push(...tmp);
+
+    // live listener for auto updates
+    try{
+      const unsub = ref.collection("items").onSnapshot(qs=>{
+        const list = [];
+        qs.forEach(dd=>{
+          const d=dd.data()||{};
+          const st=normalizeStatus(d.status||"pending");
+          const amt=pickItemAmount(d,order);
+          list.push({
+            orderId: order.id,
+            orderPath,
+            id: dd.id,
+            _path: dd.ref.path,
+            status: st,
+            deliveredAt: d.deliveredAt || order.deliveredAt || null,
+            deliveredBy: d.deliveredBy || null,
+            subtotal: +amt || 0,
+            platformFee: (typeof d.platformFee==="number") ? d.platformFee : undefined,
+            region: order.region || order.destinationRegion || order.sellerRegion || "Unknown",
+            createdAt: order.createdAt || null
+          });
+        });
+        if (list.length===0){
+          list.push({
+            orderId: order.id,
+            orderPath,
+            id: "auto_1",
+            _path: `${orderPath}/items/auto_1`,
+            status: "pending",
+            deliveredAt: null,
+            deliveredBy: null,
+            subtotal: +order.subtotal || 0,
+            platformFee: undefined,
+            region: order.region || order.destinationRegion || order.sellerRegion || "Unknown",
+            createdAt: order.createdAt || null
+          });
+        }
+        const sumSub2 = Math.max(1, list.reduce((a,x)=>a+(+x.subtotal||0),0));
+        const orderFee2 = (typeof order.platformFee==="number") ? +order.platformFee : (0.10 * sumSub2);
+        list.forEach(it=>{
+          it.calcProfit = (typeof it.platformFee==="number") ? +it.platformFee : (orderFee2 * ((+it.subtotal||0)/sumSub2));
+        });
+        // replace items of this order
+        RAW.items = RAW.items.filter(it=> it.orderPath !== orderPath);
+        RAW.items.push(...list);
+        rebuildCharts();
+      }, err => console.warn("items live error:", err));
+      __itemUnsubs.push(unsub);
+    }catch(e){ /* ignore */ }
+  }
+
+  // hydrate items for root orders
+  await Promise.all(RAW.orders.map(readItemsForOrder));
+
+  /* Optional: customer growth meta (unchanged) */                  
+  RAW.customerGrowthMeta = null;                  
+  try{                  
+    const cgDoc = await db.collection("meta").doc("customerGrowth").get();                  
+    if(cgDoc.exists){                  
+      const d = cgDoc.data() || {};                  
+      let labels = [], values = [];                  
+      if(Array.isArray(d.labels) && Array.isArray(d.values)){                  
+        labels = d.labels; values = d.values.map(x=>+x||0);                  
+      }else if(d.buckets && typeof d.buckets==='object'){                  
+        labels = Object.keys(d.buckets).sort((a,b)=> new Date(a)-new Date(b));                  
+        values = labels.map(k => +d.buckets[k] || 0);                  
+      }                  
+      if(labels.length) RAW.customerGrowthMeta = {labels, values};                  
+    }                  
+  }catch(e){}                  
+                  
+  /* Expenses reads (unchanged from last version) */                  
+  RAW.expenses = [];                  
+  function __amt(x){ if (typeof x==="number") return x||0; if (typeof x==="string"){ const n=parseFloat(x.replace(/[^0-9.\-]/g,"")); return isNaN(n)?0:n; } return 0; }                  
+  function __dt(data){                  
+    try{                  
+      const v = data && (data.createdAt ?? data.date ?? data.timestamp ?? data.time ?? data.ts);                  
+      if (v?.toDate) return v.toDate();                  
+      if (typeof v?.seconds === "number") return new Date(v.seconds*1000);                  
+      if (typeof v === "number") return new Date(v);                  
+      if (typeof v === "string") return new Date(v);                  
+    }catch(_){}                  
+    return null;                  
+  }                  
+  try{                  
+    let qTop = db.collection("expenses")                  
+      .where("createdAt", ">=", ts(from))                  
+      .where("createdAt", "<=", ts(to));                  
+    const expTopSnap = await qTop.get();                  
+    const pushDoc = (d)=>{                  
+      const data = d.data()||{};                  
+      RAW.expenses.push({                  
+        id:d.id, _path:d.ref.path, ...data,                  
+        amount: __amt(data.amount),                  
+        region: data.region || data.destinationRegion || data.sellerRegion || "Unknown"                  
+      });                  
+    };                  
+    if (expTopSnap.empty){                  
+      const all = await db.collection("expenses").get();                  
+      all.forEach(dx=>{                  
+        const data = dx.data()||{}; const when=__dt(data);                  
+        if (!when || (when>=from && when<=to)) pushDoc(dx);                  
+      });                  
+    } else {                  
+      expTopSnap.forEach(pushDoc);                  
+    }                  
+  }catch(e){}                  
+                  
+  try{                  
+    const cgSnap = await db.collectionGroup("expenses")                  
+      .where("createdAt", ">=", ts(from))                  
+      .where("createdAt", "<=", ts(to))                  
+      .get();                  
+    const seen = new Set(RAW.expenses.map(x=>x._path||""));                  
+    const jobs=[];                  
+    async function __push(doc,data){                  
+      const path = doc.ref.path; if(seen.has(path)) return;                  
+      const parentUserRef = doc.ref.parent.parent;                  
+      let regionFromDoc = data.region || data.destinationRegion || data.sellerRegion || null;                  
+      if (!regionFromDoc && parentUserRef) {                  
+        try{ const u = await parentUserRef.get(); regionFromDoc = u.exists ? (u.get("region")||"Unknown") : "Unknown"; }catch(_){ regionFromDoc="Unknown"; }                  
+      }                  
+      RAW.expenses.push({ id:doc.id, _path:path, ...data, amount: __amt(data.amount), region: regionFromDoc || "Unknown" });                  
+      seen.add(path);                  
+    }                  
+    if (cgSnap.empty){                  
+      const all = await db.collectionGroup("expenses").get();                  
+      for (const doc of all.docs){                  
+        const data = doc.data()||{}; const when = __dt(data);                  
+        if (!when || (when>=from && when<=to)) jobs.push(__push(doc,data));                  
+      }                  
+    } else {                  
+      cgSnap.forEach(doc=> jobs.push(__push(doc,doc.data()||{})));                  
+    }                  
+    if (jobs.length) await Promise.all(jobs);                  
+  }catch(e){}                  
+                  
+  if (window.OWNER_UID){                  
+    try{                  
+      const ownerRef = db.collection("users").doc(window.OWNER_UID);                  
+      const expColl  = ownerRef.collection("expenses");                  
+      let snap = await expColl                  
+        .where("createdAt", ">=", ts(from))                  
+        .where("createdAt", "<=", ts(to))                  
+        .orderBy("createdAt","desc")                  
+        .get()                  
+        .catch(err => ({ error: err }));                  
+      let docs = [];                  
+      const __dt2 = (data)=>{ try{ if(data.createdAt?.toDate) return data.createdAt.toDate(); }catch(_){ } return null; };                  
+      if (snap.error){                  
+        const all = await expColl.get();                  
+        docs = all.docs.filter(d=>{ const when = __dt2(d.data()||{}); return !when || (when>=from && when<=to); });                  
+      } else {                  
+        docs = snap.docs;                  
+      }                  
+      const seen = new Set(RAW.expenses.map(x=>x._path||""));                  
+      const ownerRegion = window.__ownerRegion || "Unknown";                  
+      for (const doc of docs){                  
+        const data = doc.data() || {};                  
+        const path = doc.ref.path;                  
+        if (seen.has(path)) continue;                  
+        RAW.expenses.push({                  
+          id: doc.id,                  
+          _path: path,                  
+          ...data,                  
+          amount: (typeof data.amount==="number")?data.amount:0,                  
+          region: data.region || ownerRegion                  
+        });                  
+        seen.add(path);                  
+      }                  
+    }catch(e){}                  
+  }                  
+}                  
+</script>              <script>                  
+/* ======================= AGGREGATION / KPIs ======================= */                  
+function sum(arr, sel){ return arr.reduce((a,x)=>a+(+sel(x)||0),0); }                  
+function fmtMoney(v){ try{return "XAF " + (v||0).toLocaleString();}catch{return "XAF "+(v||0);} }                  
+function bucketKey(d){                  
+  const dt = (d && d.toDate) ? d.toDate() : (d instanceof Date ? d : new Date(d));                  
+  const g = State.granularity;                  
+  if(g==="day")  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getDate()).padStart(2,"0")} ${String(dt.getHours()).padStart(2,"0")}:00`;                  
+  if(g==="week"||g==="month") return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}-${String(dt.getDate()).padStart(2,"0")}`;                  
+  if(g==="year") return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,"0")}`;                  
+  return dt.toISOString();                  
+}                  
+                  
+function aggregate(){                  
+  /* Use ITEMS not ORDERS (per your instruction) */
+  const ITEMS = (State.region === "ALL")
+    ? RAW.items
+    : RAW.items.filter(it => regionMatches(it, State.region));
+
+  const isFinal = (s)=> (s==="completed" || s==="delivered"); // legacy delivered accepted
+  const finalItems = ITEMS.filter(it => isFinal(it.status));
+  const openItems  = ITEMS.filter(it => !isFinal(it.status) && it.status!=="cancelled");
+
+  const totalSales = sum(finalItems, it=> it.subtotal);
+  const netProfit  = sum(finalItems, it=> (typeof it.calcProfit==="number" ? it.calcProfit : (0.10*(+it.subtotal||0))));
+
+  const pendingSales  = sum(openItems, it=> it.subtotal);
+  const pendingProfit = sum(openItems, it=> (typeof it.calcProfit==="number" ? it.calcProfit : (0.10*(+it.subtotal||0))));
+
+  const pendingOrders = openItems.length;
+  const totalOrders   = finalItems.length; // per-item count
+
+  /* Shipping KPIs: keep using order-level sums (unchanged) */
+  const ORDERS = (State.region === "ALL") ? RAW.orders : RAW.orders.filter(o=>regionMatches(o,State.region));
+  const shippingPaid  = sum(ORDERS, o=> o.ship);
+  const shippingSpend = sum(ORDERS, o=> o.shipSpend);
+  const shippingNet   = shippingPaid - shippingSpend;
+
+  const expensesSum = sum(
+    RAW.expenses.filter(e => {
+      if (State.region === "ALL") return true;
+      const r = e.region || e.destinationRegion || e.sellerRegion || null;
+      return normalizeRegion(r) === normalizeRegion(State.region);
+    }),
+    e => e.amount
+  );
+  const netAfterExpenses = netProfit + shippingNet - expensesSum;
+
+  const sel = State.region;
+  const sellersCount  = RAW.users.sellers .filter(u=> sel==="ALL" || normalizeRegion(u.region||"Unknown")===normalizeRegion(sel)).length;                  
+  const managersCount = RAW.users.managers.filter(u=> sel==="ALL" || normalizeRegion(u.region||"Unknown")===normalizeRegion(sel)).length;                  
+  const workersCount  = RAW.users.workers .filter(u=> sel==="ALL" || normalizeRegion(u.region||"Unknown")===normalizeRegion(sel)).length;                  
+
+  animateNumber("#kpiSales", totalSales, fmtMoney);                  
+  animateNumber("#kpiProfit", netProfit, fmtMoney);                  
+  animateNumber("#kpiPendingOrders", pendingOrders, (v)=>v.toLocaleString());                  
+  animateNumber("#kpiPendingPayouts", sum(RAW.payouts.filter(p=>["waiting","pending"].includes(p.status) && (State.region==="ALL" || (normalizeRegion(p.region||"Unknown")===normalizeRegion(State.region)))), p=>p.amount), fmtMoney);                  
+  animateNumber("#kpiTotalOrders", totalOrders, (v)=>v.toLocaleString());                  
+  animateNumber("#kpiPendingSales", pendingSales, fmtMoney);                  
+  animateNumber("#kpiPendingProfit", pendingProfit, fmtMoney);                  
+  animateNumber("#kpiShipPaid", shippingPaid, fmtMoney);                  
+  animateNumber("#kpiShipSpend", shippingSpend, fmtMoney);                  
+  animateNumber("#kpiShipNet", shippingNet, fmtMoney);                  
+  animateNumber("#kpiNetAfterExpenses", netAfterExpenses, fmtMoney);                  
+
+  const elSellers  = $("#kpiSellers");                  
+  const elManagers = $("#kpiManagers");                  
+  const elWorkers  = $("#kpiWorkers");                  
+  if(elSellers)  elSellers.textContent  = sellersCount.toLocaleString();                  
+  if(elManagers) elManagers.textContent = managersCount.toLocaleString();                  
+  if(elWorkers)  elWorkers.textContent  = workersCount.toLocaleString();                  
+
+  // Trend by item (completed only)
+  const trend = {};
+  finalItems.forEach(it=>{
+    const key = bucketKey(it.deliveredAt || it.createdAt);
+    if(!trend[key]) trend[key] = { sales:0, profit:0, rows:[] };
+    trend[key].sales  += (+it.subtotal||0);
+    trend[key].profit += (typeof it.calcProfit==="number" ? it.calcProfit : (0.10*(+it.subtotal||0)));
+    trend[key].rows.push(it);
+  });
+  const trendLabels = Object.keys(trend).sort((a,b)=> new Date(a)-new Date(b));
+  const trendSales  = trendLabels.map(k=>trend[k].sales);
+  const trendProfit = trendLabels.map(k=>trend[k].profit);
+
+  // by region (completed items)
+  const salesByRegion = new Map(); const profitByRegion = new Map(); const regionRows = new Map();                  
+  REGIONS.forEach(r=>{ salesByRegion.set(r.en,0); profitByRegion.set(r.en,0); regionRows.set(r.en,[]); });                  
+  finalItems.forEach(it=>{
+    const r = normalizeRegion(it.region || "Unknown") || "Unknown";
+    if(!salesByRegion.has(r)) salesByRegion.set(r,0), profitByRegion.set(r,0), regionRows.set(r,[]);
+    salesByRegion.set(r, salesByRegion.get(r) + (+it.subtotal||0));
+    const fee = (typeof it.calcProfit==="number") ? it.calcProfit : (0.10*(+it.subtotal||0));
+    profitByRegion.set(r, profitByRegion.get(r) + (+fee||0));
+    regionRows.get(r).push(it);
+  });
+
+  // Status counts per item (all items)
+  const statusCounts = STATUS_KEYS.map(s=> ITEMS.filter(it=> it.status===s).length);
+  const statusRows = {}; STATUS_KEYS.forEach(s=> statusRows[s] = ITEMS.filter(it=> it.status===s));
+
+  // Roles / payouts / wallets / growth unchanged
+  const rolesMap = new Map();                  
+  function addRole(list, key){                  
+    list.forEach(u=>{                  
+      const r = normalizeRegion(u.region || "Unknown");                  
+      if(!rolesMap.has(r)) rolesMap.set(r,{cust:[],sell:[],work:[]});                  
+      rolesMap.get(r)[key].push(u);                  
+    });                  
+  }                  
+  addRole(RAW.users.customers,"cust"); addRole(RAW.users.sellers,"sell"); addRole(RAW.users.workers,"work");                  
+  REGIONS.forEach(r=>{ if(!rolesMap.has(r.en)) rolesMap.set(r.en,{cust:[],sell:[],work:[]}); });                  
+                  
+  const payoutMap = new Map(); const payoutRows = new Map();                  
+  REGIONS.forEach(r=> (payoutMap.set(r.en,0), payoutRows.set(r.en,[])));                  
+  RAW.payouts.forEach(p=>{                  
+    const r = normalizeRegion(p.region || "Unknown");                  
+    if(!payoutMap.has(r)) payoutMap.set(r,0), payoutRows.set(r,[]);                  
+    payoutMap.set(r, payoutMap.get(r) + (+p.amount||0));                  
+    payoutRows.get(r).push(p);                  
+  });                  
+                  
+  REGIONS.forEach(r=>{ if(!RAW.walletsByRegion.has(r.en)) RAW.walletsByRegion.set(r.en,0); });                  
+                  
+  const growth = {};                  
+  RAW.users.customers.forEach(u=>{                  
+    if (State.region !== "ALL" && normalizeRegion(u.region || "Unknown") !== normalizeRegion(State.region)) return;                  
+    const d = u.createdAt || null; if(!d) return;                  
+    const key = bucketKey(d);                  
+    if(!growth[key]) growth[key]=0;                  
+    growth[key]+=1;                  
+  });                  
+  let growthLabels = Object.keys(growth).sort((a,b)=> new Date(a)-new Date(b));                  
+  let growthVals   = growthLabels.map(k=> growth[k]);                  
+  if(RAW.customerGrowthMeta && RAW.customerGrowthMeta.labels && State.region==="ALL"){                  
+    growthLabels = RAW.customerGrowthMeta.labels;                  
+    growthVals   = RAW.customerGrowthMeta.values || [];                  
+  }                  
+  growthVals = growthVals.map(v => Math.round(+v||0));                  
+
+  const selected = State.region;                  
+  let regionSalesLabels = [...salesByRegion.keys()];                  
+  let regionSalesValues = [...salesByRegion.values()];                  
+  if (selected !== "ALL") {                  
+    regionSalesLabels = [normalizeRegion(selected)];                  
+    regionSalesValues = [salesByRegion.get(normalizeRegion(selected))||0];                  
+  }                  
+  let profitRegionLabels = [...profitByRegion.keys()];                  
+  let profitRegionValues = [...profitByRegion.values()];                  
+  if (selected !== "ALL") {                  
+    profitRegionLabels = [normalizeRegion(selected)];                  
+    profitRegionValues = [profitByRegion.get(normalizeRegion(selected))||0];                  
+  }                  
+  let rolesLabels = [...rolesMap.keys()];                  
+  let rolesCust   = [...rolesMap.values()].map(x=>x.cust.length);                  
+  let rolesSell   = [...rolesMap.values()].map(x=>x.sell.length);                  
+  let rolesWork   = [...rolesMap.values()].map(x=>x.work.length);                  
+  if (selected !== "ALL") {                  
+    const bucket = rolesMap.get(normalizeRegion(selected)) || {cust:[],sell:[],work:[]};                  
+    rolesLabels = [normalizeRegion(selected)];                  
+    rolesCust   = [bucket.cust.length];                  
+    rolesSell   = [bucket.sell.length];                  
+    rolesWork   = [bucket.work.length];                  
+  }                  
+  let payoutLabels = [...payoutMap.keys()];                  
+  let payoutValues = [...payoutMap.values()];                  
+  if (selected !== "ALL") {                  
+    payoutLabels = [normalizeRegion(selected)];                  
+    payoutValues = [payoutMap.get(normalizeRegion(selected))||0];                  
+  }                  
+  let walletsLabels = [...RAW.walletsByRegion.keys()];                  
+  let walletsValues = [...RAW.walletsByRegion.values()];                  
+  if (selected !== "ALL") {                  
+    walletsLabels = [normalizeRegion(selected)];                  
+    walletsValues = [RAW.walletsByRegion.get(normalizeRegion(selected))||0];                  
+  }                  
+
+  return {                  
+    trend:{labels:trendLabels, sales:trendSales, profit:trendProfit, byBucket:trend},                  
+    regionSales:{labels:regionSalesLabels, values:regionSalesValues, rows:regionRows},                  
+    profitRegion:{labels:profitRegionLabels, values:profitRegionValues, rows:regionRows},                  
+    status:{labels:STATUS_KEYS, values:statusCounts, rows:statusRows},                  
+    roles:{labels:rolesLabels, cust:rolesCust, sell:rolesSell, work:rolesWork, rows:rolesMap},                  
+    payoutsRegion:{labels:payoutLabels, values:payoutValues, rows:payoutRows},                  
+    walletsRegion:{labels:walletsLabels, values:walletsValues},                  
+    growth:{labels:growthLabels, values:growthVals}                  
+  };                  
+}                  
+                  
+function animateNumber(sel, value, fmt){                  
+  const el = $(sel); if(!el) return; const start = 0; const dur = 650; const t0 = performance.now();                  
+  function step(t){                  
+    const p = Math.min(1, (t-t0)/dur);                  
+    const v = Math.floor(start + (value-start)*p);                  
+    el.textContent = fmt ? fmt(v) : v.toLocaleString();                  
+    if(p<1) requestAnimationFrame(step);                  
+  }                  
+  requestAnimationFrame(step);                  
+}                  
+</script>              <script>                  
+/* ======================= CHARTS / DRILLDOWNS ======================= */                  
+let charts = {};                  
+function rebuildCharts(){                  
+  const D = aggregate();                  
+                  
+  destroyAll();                  
+  charts.salesTrend = new Chart($("#salesTrend"), {                  
+    type:"line",                  
+    data:{ labels:D.trend.labels, datasets:[                  
+      { label:t("kpi.sales"), data:D.trend.sales, borderWidth:2, tension:.25 },                  
+      { label:t("kpi.profit"), data:D.trend.profit, borderWidth:2, tension:.25 }                  
+    ]},                  
+    options:{ responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true } } }                  
+  });                  
+  charts.orderStatus = new Chart($("#orderStatus"), {                  
+    type:"doughnut",                  
+    data:{ 
+      labels: D.status.labels.map(k => statusLabel(k, State.lang)),
+      datasets:[{ data:D.status.values }] 
+    },                  
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:"bottom" } } }                  
+  });                  
+  charts.regionSales = new Chart($("#regionSales"), {                  
+    type:"bar",                  
+    data:{ labels:D.regionSales.labels, datasets:[{ label:t("kpi.sales"), data:D.regionSales.values }] },                  
+    options:{ responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true } } }                  
+  });                  
+  charts.profitByRegion = new Chart($("#profitByRegion"), {                  
+    type:"bar",                  
+    data:{ labels:D.profitRegion.labels, datasets:[{ label:t("kpi.profit"), data:D.profitRegion.values }] },                  
+    options:{ responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true } } }                  
+  });                  
+  charts.roleByRegion = new Chart($("#roleByRegion"), {                  
+    type:"bar",                  
+    data:{ labels:D.roles.labels, datasets:[                  
+      { label:(State.lang==="fr"?"Clients":"Customers"), data:D.roles.cust, stack:"roles" },                  
+      { label:(State.lang==="fr"?"Vendeurs":"Sellers"), data:D.roles.sell, stack:"roles" },                  
+      { label:(State.lang==="fr"?"Travailleurs":"Workers"), data:D.roles.work, stack:"roles" }                  
+    ]},                  
+    options:{ responsive:true, maintainAspectRatio:false, scales:{ x:{ stacked:true }, y:{ stacked:true, beginAtZero:true, ticks:{ stepSize:1, precision:0 } } } }                  
+  });                  
+                  
+  charts.payoutsByRegion = new Chart($("#payoutsByRegion"), {                  
+    type:"bar",                  
+    data:{ labels:D.payoutsRegion.labels, datasets:[{ label:(State.lang==="fr"?"Paiements":"Payouts"), data:D.payoutsRegion.values }] },                  
+    options:{ responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true } } }                  
+  });                  
+                  
+  /* ✅ Wallet chart unchanged */                  
+  (function buildWalletChart(){                  
+    const el = $("#walletsByRegion");                  
+    const selected = State.region;                  
+    if (selected !== "ALL"){                  
+      const roleLabels = (State.lang==="fr")                  
+        ? ["Clients","Vendeurs","Travailleurs","Managers"]                  
+        : ["Customers","Sellers","Workers","Managers"];                  
+      const key = normalizeRegion(selected);                  
+      const sumRole = (r)=> RAW.wallets                  
+        .filter(w=> normalizeRegion(w.region)===key && String(w.role||"").toLowerCase()===r)                  
+        .reduce((a,x)=> a + (+x.balance||0), 0);                  
+      const values = ["customer","seller","worker","manager"].map(sumRole);                  
+      charts.walletsByRegion = new Chart(el, {                  
+        type:"pie",                  
+        data:{ labels:roleLabels, datasets:[{ data:values }] },                  
+        options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:"bottom" } } }                  
+      });                  
+    }else{                  
+      charts.walletsByRegion = new Chart(el, {                  
+        type:"pie",                  
+        data:{ labels:D.walletsRegion.labels, datasets:[{ data:D.walletsRegion.values }] },                  
+        options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:"bottom" } } }                  
+      });                  
+    }                  
+  })();                  
+                  
+  charts.customerGrowth = new Chart($("#customerGrowth"), {                  
+    type:"line",                  
+    data:{ labels:D.growth.labels, datasets:[{ label:(State.lang==="fr"?"Nouveaux clients":"New customers"), data:D.growth.values, borderWidth:2, tension:.25 }] },                  
+    options:{ responsive:true, maintainAspectRatio:false, scales:{ y:{ beginAtZero:true, ticks:{ stepSize:1, precision:0 } } } }                  
+  });                  
+                  
+  bindDrilldowns(D);                  
+}                  
+function destroyAll(){ Object.values(charts).forEach(c=> c && c.destroy()); }                  
+                  
+/* Modal */                  
+const modal = $("#modal");                  
+const modalTitle = $("#modalTitle");                  
+const modalTable = $("#modalTable");                  
+const modalClose = $("#modalClose");                  
+const modalCsvBtn = $("#modalCsvBtn");                  
+let lastModalRows = [];                  
+let lastModalHeaders = [];                  
+modalClose.addEventListener("click", ()=> modal.classList.remove("show"));                  
+modal.addEventListener("click", (e)=>{ if(e.target===modal) modal.classList.remove("show"); });                  
+modalCsvBtn.addEventListener("click", ()=> downloadCSV((modalTitle.textContent||"details").toLowerCase().replace(/\s+/g,"_"), [lastModalHeaders, ...rowsToCsv(lastModalRows,lastModalHeaders)]));                  
+function rowsToCsv(rows, headers){                  
+  return rows.map(r => headers.map(h => {                  
+    const val = r[h];                  
+    if(val instanceof Date) return val.toISOString();                  
+    if(val && val.seconds && val.nanoseconds){ return new Date(val.seconds*1000).toISOString(); }                  
+    return (val==null?"":val);                  
+  }));                  
+}                  
+function openModal(title, headers, rows){                  
+  modalTitle.textContent = title;                  
+  lastModalRows = rows;                  
+  lastModalHeaders = headers;                  
+                  
+  const th = headers.map(h=>`<th>${h}</th>`).join("");                  
+  const tb = rows.map(r=>{                  
+    const tds = headers.map(h=>{                  
+      let v = r[h];                  
+      const low = h.toLowerCase();                  
+      if(low.includes("amount") || low.includes("total") || low.includes("profit")) v = fmtMoney(+v||0);                  
+      if(v && v.seconds) v = new Date(v.seconds*1000).toLocaleString();                  
+      if(v instanceof Date) v = v.toLocaleString();                  
+      return `<td>${v==null?"":String(v)}</td>`;                  
+    }).join("");                  
+    return `<tr>${tds}</tr>`;                  
+  }).join("");                  
+  modalTable.querySelector("thead").innerHTML = `<tr>${th}</tr>`;                  
+  modalTable.querySelector("tbody").innerHTML = tb || `<tr><td colspan="${headers.length}">No data</td></tr>`;                  
+  modal.classList.add("show");                  
+}                  
+function bindDrilldowns(D){                  
+  $("#salesTrend").onclick = (evt)=>{                  
+    const pts = charts.salesTrend.getElementsAtEventForMode(evt, 'nearest', {intersect:true}, true);                  
+    if(!pts.length) return;                  
+    const idx = pts[0].index;                  
+    const label = D.trend.labels[idx];                  
+    const bucket = D.trend.byBucket[label];                  
+    const rows = (bucket?.rows||[]).map(it=>({                  
+      orderId:it.orderId, itemId:it.id, region:it.region, status:it.status, amount:it.subtotal, profit:(typeof it.calcProfit==="number"?it.calcProfit:(0.10*(+it.subtotal||0))),                  
+      createdAt:it.createdAt, deliveredAt:it.deliveredAt                  
+    }));                  
+    openModal(`${t("modal.orders")} — ${label}`, ["orderId","itemId","region","status","amount","profit","createdAt","deliveredAt"], rows);                  
+  };                  
+                  
+  $("#orderStatus").onclick = (evt)=>{                  
+    const els = charts.orderStatus.getElementsAtEventForMode(evt, 'nearest', {intersect:true}, true);                  
+    if(!els.length) return;                  
+    const idx = els[0].index;                  
+    const statusKey = D.status.labels[idx];                  
+    const rows = (D.status.rows[statusKey]||[]).map(it=>({                  
+      orderId:it.orderId, itemId:it.id, region:it.region, status:it.status, amount:it.subtotal, createdAt:it.createdAt                  
+    }));                  
+    const label = charts.orderStatus.data.labels[idx];                  
+    openModal(`${t("modal.orders")} — ${label}`, ["orderId","itemId","region","status","amount","createdAt"], rows);                  
+  };                  
+                  
+  $("#regionSales").onclick = (evt)=>{                  
+    const els = charts.regionSales.getElementsAtEventForMode(evt, 'nearest', {intersect:true}, true);                  
+    if(!els.length) return;                  
+    const idx = els[0].index;                  
+    const region = D.regionSales.labels[idx];                  
+    const rows = (D.regionSales.rows.get(region)||[]).map(it=>({                  
+      orderId:it.orderId, itemId:it.id, region:it.region, status:it.status, amount:it.subtotal, createdAt:it.createdAt, deliveredAt:it.deliveredAt                  
+    }));                  
+    openModal(`${t("modal.orders")} — ${region}`, ["orderId","itemId","region","status","amount","createdAt","deliveredAt"], rows);                  
+  };                  
+                  
+  $("#profitByRegion").onclick = (evt)=>{                  
+    const els = charts.profitByRegion.getElementsAtEventForMode(evt, 'nearest', {intersect:true}, true);                  
+    if(!els.length) return;                  
+    const idx = els[0].index;                  
+    const region = D.profitRegion.labels[idx];                  
+    const rows = (D.profitRegion.rows.get(region)||[]).map(it=>({                  
+      orderId:it.orderId, itemId:it.id, region:it.region, status:it.status, amount:it.subtotal, profit:(typeof it.calcProfit==="number"?it.calcProfit:(0.10*(+it.subtotal||0))),                  
+      deliveredAt:it.deliveredAt                  
+    }));                  
+    openModal(`${t("modal.orders")} — ${region}`, ["orderId","itemId","region","status","amount","profit","deliveredAt"], rows);                  
+  };                  
+                  
+  $("#roleByRegion").onclick = (evt)=>{                  
+    const els = charts.roleByRegion.getElementsAtEventForMode(evt, 'nearest', {intersect:true}, true);                  
+    if(!els.length) return;                  
+    const elem = els[0];                  
+    const region = D.roles.labels[elem.index];                  
+    const dsIndex = elem.datasetIndex;                  
+    const key = dsIndex===0?"cust":dsIndex===1?"sell":"work";                  
+    const list = (D.roles.rows.get(region)||{})[key]||[];                  
+    const rows = list.map(u=>({ id:u.id, role:u.role, region:u.region, email:u.email||"", name:u.displayName||"", createdAt:u.createdAt }));                  
+    openModal(`${t("modal.users")} — ${region}`, ["id","role","region","email","name","createdAt"], rows);                  
+  };                  
+                  
+  $("#payoutsByRegion").onclick = (evt)=>{                  
+    const els = charts.payoutsByRegion.getElementsAtEventForMode(evt, 'nearest', {intersect:true}, true);                  
+    if(!els.length) return;                  
+    const idx = els[0].index;                  
+    const region = D.payoutsRegion.labels[idx];                  
+    const rows = (D.payoutsRegion.rows.get(region)||[]).map(p=>({                  
+      id:p.id, region:p.region, amount:p.amount, status:p.status, createdAt:p.createdAt                  
+    }));                  
+    openModal(`${t("modal.payouts")} — ${region}`, ["id","region","amount","status","createdAt"], rows);                  
+  };                  
+                  
+  $("#walletsByRegion").onclick = (evt)=>{                  
+    const els = charts.walletsByRegion.getElementsAtEventForMode(evt, 'nearest', {intersect:true}, true);                  
+    if(!els.length) return;                  
+    const idx = els[0].index;                  
+                  
+    const selected = State.region;                  
+    if (selected !== "ALL"){                  
+      const label = charts.walletsByRegion.data.labels[idx]; // role label                  
+      const roleMap = (State.lang==="fr")                  
+        ? { "Clients":"customer","Vendeurs":"seller","Travailleurs":"worker","Managers":"manager" }                  
+        : { "Customers":"customer","Sellers":"seller","Workers":"worker","Managers":"manager" };                  
+      const roleKey = roleMap[label] || "";                  
+      const regionKey = normalizeRegion(selected);                  
+      let rows = RAW.wallets                  
+        .filter(w=> normalizeRegion(w.region)===regionKey && String(w.role||"").toLowerCase()===roleKey)                  
+        .map(w=>({ uid:w.uid, name:w.displayName, email:w.email, region:w.region, balance:w.balance }));                  
+      openModal(`${t("modal.wallets")} — ${label}`, ["uid","name","email","region","balance"], rows);                  
+      return;                  
+    }                  
+                  
+    const region = charts.walletsByRegion.data.labels[idx];                  
+    let rows = RAW.wallets.filter(w=> normalizeRegion(w.region)===normalizeRegion(region)).map(w=>({                  
+      uid:w.uid, name:w.displayName, email:w.email, region:w.region, balance:w.balance                  
+    }));                  
+    if(!rows.length && RAW.walletRowsByRegion.has(region)){                  
+      rows = RAW.walletRowsByRegion.get(region);                  
+    }                  
+    openModal(`${t("modal.wallets")} — ${region}`, ["uid","name","email","region","balance"], rows);                  
+  };                  
+                  
+  $("#customerGrowth").onclick = (evt)=>{                  
+    const els = charts.customerGrowth.getElementsAtEventForMode(evt, 'nearest', {intersect:true}, true);                  
+    if(!els.length) return;                  
+    const idx = els[0].index;                  
+    const bucketLabel = charts.customerGrowth.data.labels[idx];                  
+    const rows = RAW.users.customers                  
+      .filter(u => (State.region==="ALL" || normalizeRegion(u.region||"Unknown")===normalizeRegion(State.region)))                  
+      .filter(u => bucketKey(u.createdAt) === bucketLabel)                  
+      .map(u=>({ id:u.id, email:u.email||"", name:u.displayName||"", region:u.region, createdAt:u.createdAt }));                  
+    openModal(`${t("modal.users")} — ${bucketLabel}`, ["id","email","name","region","createdAt"], rows);                  
+  };                  
+}                  
+                  
+function downloadCSV(name, rows){                  
+  const csv = rows.map(r=> r.map(v=>{                  
+    const s = (v==null?"":String(v)).replace(/"/g,'""');                  
+    return `"${s}"`;                  
+  }).join(",")).join("\n");                  
+  const blob = new Blob([csv],{type:"text/csv;charset=utf-8;"});                  
+  const url = URL.createObjectURL(blob);                  
+  const a = document.createElement("a"); a.href=url; a.download=name+".csv"; a.click(); URL.revokeObjectURL(url);                  
+}                  
+function exportTrendCSV(){ const D = aggregate(); const rows = [["Bucket","Sales (XAF)","Profit (XAF)"]]; D.trend.labels.forEach((l,i)=> rows.push([l, D.trend.sales[i], D.trend.profit[i]])); downloadCSV("sales_trend", rows); }                  
+function exportStatusCSV(){ const D = aggregate(); const rows = [["Status","Count"]]; D.status.labels.forEach((k,i)=> rows.push([statusLabel(k, State.lang), D.status.values[i]])); downloadCSV("order_status", rows); }                  
+function exportRegionSalesCSV(){ const D = aggregate(); const rows = [["Region","Sales (XAF)"]]; D.regionSales.labels.forEach((l,i)=> rows.push([l, D.regionSales.values[i]])); downloadCSV("sales_by_region", rows); }                  
+function exportProfitRegionCSV(){ const D = aggregate(); const rows = [["Region","Profit (XAF)"]]; D.profitRegion.labels.forEach((l,i)=> rows.push([l, D.profitRegion.values[i]])); downloadCSV("profit_by_region", rows); }                  
+function exportRolesCSV(){ const D = aggregate(); const rows = [["Region","Customers","Sellers","Workers"]]; D.roles.labels.forEach((l,i)=> rows.push([l, D.roles.cust[i], D.roles.sell[i], D.roles.work[i]])); downloadCSV("roles_by_region", rows); }                  
+function exportPayoutsRegionCSV(){ const D = aggregate(); const rows = [["Region","Payouts (XAF)"]]; D.payoutsRegion.labels.forEach((l,i)=> rows.push([l, D.payoutsRegion.values[i]])); downloadCSV("payouts_by_region", rows); }                  
+function exportWalletsRegionCSV(){ const D = aggregate(); const rows = [["Region","Wallet Balance (XAF)"]]; D.walletsRegion.labels.forEach((l,i)=> rows.push([l, D.walletsRegion.values[i]])); downloadCSV("wallets_by_region", rows); }                  
+function exportCustomerGrowthCSV(){ const D = aggregate(); const rows = [["Bucket","New Customers"]]; D.growth.labels.forEach((l,i)=> rows.push([l, D.growth.values[i]])); downloadCSV("customer_growth", rows); }                  
+function exportOrdersCSV(){ const rows = [["id","subtotal_XAF","platformFee_XAF","status","region","createdAt","deliveredAt","ship_XAF","shipSpend_XAF"]]; RAW.orders.forEach(o=> rows.push([o.id,o.subtotal,o.platformFee??"",o.status,o.region,(o.createdAt&&o.createdAt.toDate()),(o.deliveredAt&&o.deliveredAt.toDate()), o.ship ?? "", o.shipSpend ?? ""])); downloadCSV("orders", rows); }                  
+function exportPayoutsCSV(){ const rows = [["id","amount_XAF","status","region","createdAt"]]; RAW.payouts.forEach(p=> rows.push([p.id,p.amount,p.status,p.region,(p.createdAt&&p.createdAt.toDate())])); downloadCSV("payouts", rows); }                  
+function exportUsersCSV(){ const rows = [["id","role","region","email","displayName","createdAt"]]; [...RAW.users.customers, ...RAW.users.sellers, ...RAW.users.workers, ...RAW.users.managers].forEach(u=> rows.push([u.id,u.role,u.region,u.email||"",u.displayName||"", (u.createdAt&&u.createdAt.toDate())])); downloadCSV("users", rows); }                  
+function exportWalletsCSV(){ const rows = [["uid","displayName","email","region","balance_XAF"]]; RAW.wallets.forEach(w=> rows.push([w.uid,w.displayName||"",w.email||"",w.region,w.balance])); downloadCSV("wallets", rows); }                  
+</script>              <script>                  
+/* ======================= RUN PIPELINE ======================= */                  
+async function run(){                  
+  try{                  
+    await fetchData();                  
+    $("#inboxCount").textContent = RAW.inboxCount;                  
+    $("#broadcastCount").textContent = RAW.broadcastCount;                  
+    try{                  
+      const pp = await db.collection("pendingProducts").get();                  
+      $("#pendingProductsCount").textContent = pp.size.toLocaleString();                  
+    }catch(e){ $("#pendingProductsCount").textContent = "0"; }                  
+    const uv = RAW.items.filter(it=> (State.region==="ALL" || regionMatches(it, State.region)) && it.status==="under_verification").length;                  
+    $("#underVerificationCount").textContent = uv.toLocaleString();                  
+    rebuildCharts();                  
+  }catch(e){                  
+    console.error(e);                  
+    if(/FAILED_PRECONDITION|failed-precondition/i.test(e.message||"")){                  
+      const w=$("#configWarning"); if(w){w.style.display="block"; w.textContent = t("err.index");}                  
+    }                  
+  }                  
+}                  
+                  
+/* Sidebar smooth nav (unchanged) */                  
+(function enhanceNav(){                  
+  const links = Array.from(document.querySelectorAll('.side nav .nav-item[href^="#"]'));                  
+  if(!links.length) return;                  
+  function setActive(hash){                  
+    links.forEach(a=>{                  
+      if(a.getAttribute('href') === hash){ a.classList.add('active'); }                  
+      else{ a.classList.remove('active'); }                  
+    });                  
+  }                  
+  links.forEach(a=>{                  
+    a.addEventListener('click', (e)=>{                  
+      const href = a.getAttribute('href');                  
+      if(!href || href.charAt(0) !== '#') return;                  
+      const target = document.querySelector(href);                  
+      if(target){                  
+        e.preventDefault();                  
+        target.scrollIntoView({behavior:'smooth', block:'start'});                  
+        history.replaceState(null, '', href);                  
+        setActive(href);                  
+      }                  
+    });                  
+  });                  
+  const obs = new IntersectionObserver((entries)=>{                  
+    const visible = entries                  
+      .filter(en=> en.isIntersecting)                  
+      .sort((a,b)=> a.target.getBoundingClientRect().top - b.target.getBoundingClientRect().top);                  
+    if(visible[0]){                  
+      const id = '#'+visible[0].target.id;                  
+      setActive(id);                  
+    }                  
+  }, {root:null, rootMargin:'-40% 0px -55% 0px', threshold:[0, 0.25, 0.6, 1]});                  
+  ['overview','regions','messaging','approvals','reports'].forEach(id=>{                  
+    const el = document.getElementById(id);                  
+    if(el) obs.observe(el);                  
+  });                  
+  if(location.hash){ setActive(location.hash); }                  
+})();                  
+</script>              <!-- Merge seller subcollection orders (kept, now also per-item arrays fallback) -->              <script>                  
+(function extendFetchDataForSellerOrders(){                  
+  if (typeof window.fetchData !== "function") return;                  
+  const originalFetchData = window.fetchData;                  
+  window.fetchData = async function(){                  
+    await originalFetchData();                  
+    try{                  
+      const { from, to, region } = State;                  
+      if (!window.db) return;                  
+      let q = db.collectionGroup("orders")                  
+        .where("createdAt", ">=", firebase.firestore.Timestamp.fromDate(from))                  
+        .where("createdAt", "<=", firebase.firestore.Timestamp.fromDate(to));                  
+      if (region !== "ALL") q = q.where("region", "==", region);                  
+      const cgSnap = await q.get();                  
+      const seen = new Set(RAW.orders.map(o => (o.id || "") + "|" + (o._path || "root")));                  
+      const toMerge = [];                  
+      cgSnap.forEach(doc => {                  
+        const data = doc.data() || {};                  
+        const id = data.id || doc.id;                  
+        const key = id + "|" + doc.ref.path;                  
+        if (seen.has(key)) return;                  
+        toMerge.push({                  
+          id,                  
+          _path: doc.ref.path,                  
+          subtotal: +data.subtotal || 0,                  
+          ship: +data.ship || 0,                  
+          shipSpend: +data.shipSpend || 0,                  
+          platformFee: (typeof data.platformFee === "number") ? data.platformFee : undefined,                  
+          status: normalizeStatus(data.status || "pending"),                  
+          region: data.region || data.destinationRegion || "Unknown",                  
+          createdAt: data.createdAt,                  
+          deliveredAt: data.deliveredAt                  
+        });                  
+        seen.add(key);                  
+      });                  
+      if (toMerge.length) RAW.orders = RAW.orders.concat(toMerge);
+
+      /* NEW: also hydrate items for these merged orders (subcollection first, arrays fallback) */
+      await Promise.all(toMerge.map(async (o)=>{
+        // reuse the same helper from fetchData scope (simplified local)
+        const orderPath = o._path || (`orders/${o.id}`);
+        let ref; try{ ref = db.doc(orderPath); }catch(_){ ref = db.collection("orders").doc(o.id); }
+        const snap = await ref.collection("items").get().catch(()=>({empty:true,forEach:()=>{}}));
+        const tmp=[];
+        if (!snap.empty){
+          snap.forEach(dd=>{
+            const d=dd.data()||{};
+            const price=+d.price||0, qty=+d.qty||+d.quantity||1;
+            const amount = +d.subtotal || +d.total || (price*qty) || 0;
+            tmp.push({
+              orderId:o.id, orderPath, id:dd.id, _path:dd.ref.path,
+              status:normalizeStatus(d.status||"pending"),
+              deliveredAt:d.deliveredAt || o.deliveredAt || null,
+              deliveredBy:d.deliveredBy || null,
+              subtotal:+amount||0,
+              platformFee:(typeof d.platformFee==="number")?d.platformFee:undefined,
+              region:o.region || "Unknown",
+              createdAt:o.createdAt || null
+            });
+          });
+        } else {
+          // 🔁 Fallback: read per-item lines from arrays in the order document
+          let baseOrder = o;
+          try{
+            const fullSnap = await ref.get();
+            if (fullSnap && fullSnap.exists){
+              const data = fullSnap.data() || {};
+              baseOrder = Object.assign({ id: o.id, _path: o._path }, data);
+            }
+          }catch(_){}
+          const fromArray = mapOrderArrayItems(baseOrder, orderPath);
+          if (fromArray && fromArray.length){
+            tmp.push(...fromArray);
+          }
+          if (!tmp.length){
+            tmp.push({
+              orderId:o.id, orderPath, id:"auto_1", _path:`${orderPath}/items/auto_1`,
+              status:"pending", deliveredAt:null, deliveredBy:null,
+              subtotal:+o.subtotal||0, platformFee:undefined,
+              region:o.region || "Unknown", createdAt:o.createdAt || null
+            });
+          }
+        }
+        const sumSub = Math.max(1, tmp.reduce((a,x)=>a+(+x.subtotal||0),0));
+        const orderFee = (typeof o.platformFee==="number") ? +o.platformFee : (0.10 * sumSub);
+        tmp.forEach(it=>{
+          it.calcProfit = (typeof it.platformFee==="number") ? +it.platformFee : (orderFee * ((+it.subtotal||0)/sumSub));
+        });
+        RAW.items.push(...tmp);
+      }));
+    } catch (e) {                  
+      console.warn("collectionGroup(orders) merge failed:", e);                  
+    }                  
+  };                  
+})();                  
+</script>              <!-- Region-aware Active Customers (presence) -->              <script>                  
+(function customerOnlineKPI(){                  
+  const RTDB_URL = "https://your-shop-3bdd1-default-rtdb.firebaseio.com";                  
+  const STALE_MS = 2 * 60 * 1000;                  
+  const el = document.getElementById("kpiCustomers");                  
+  if (el) el.textContent = "0";                  
+                  
+  const onlineSets = { rtdb: new Set(), mirror: new Set() };                  
+  const userCache = new Map(); // uid -> {role, region}                  
+                  
+  function setText(n){ if (el) el.textContent = String(n); }                  
+                  
+  async function getUserRoleRegion(uid){                  
+    if (userCache.has(uid)) return userCache.get(uid);                  
+    try{                  
+      const d = await (window.db || firebase.firestore()).collection("users").doc(uid).get();                  
+      const role = d.exists ? (d.get("role") || null) : null;                  
+      const region = d.exists ? (d.get("region") || "Unknown") : "Unknown";                  
+      const val = {role, region};                  
+      userCache.set(uid, val);                  
+      return val;                  
+    }catch(e){                  
+      const val = {role:null, region:"Unknown"};                  
+      userCache.set(uid, val);                  
+      return val;                  
+    }                  
+  }                  
+                  
+  async function recompute(){                  
+    const union = new Set([...onlineSets.rtdb, ...onlineSets.mirror]);                  
+    const selected = (window.__getSelectedRegion && window.__getSelectedRegion()) || "ALL";                  
+    let count = 0;                  
+    await Promise.all(Array.from(union).map(async uid=>{                  
+      const info = await getUserRoleRegion(uid);                  
+      if (info.role === "customer"){                  
+        if (selected==="ALL" || normalizeRegion(info.region)===normalizeRegion(selected)) count++;                  
+      }                  
+    }));                  
+    setText(count);                  
+  }                  
+                  
+  // RTDB /status                  
+  try{                  
+    const statusRef = firebase.database().refFromURL(`${RTDB_URL}/status`);                  
+    statusRef.on("value", async (snap)=>{                  
+      const data = snap.val() || {};                  
+      const now = Date.now();                  
+      const out = new Set();                  
+      Object.keys(data).forEach(uid=>{                  
+        const s = data[uid] || {};                  
+        const online = (s.state === "online") || (s.online === true) || (s.state === true);                  
+        const lastMs = (typeof s.last_changed === "number")                  
+          ? s.last_changed                  
+          : (s.last_changed && s.last_changed.seconds ? s.last_changed.seconds*1000 : now);                  
+        if (online && (now - lastMs) <= STALE_MS) out.add(uid);                  
+      });                  
+      onlineSets.rtdb = out;                  
+      recompute();                  
+    }, err => console.warn("RTDB status read error:", err));                  
+  }catch(e){ console.warn("RTDB init error:", e); }                  
+                  
+  // Firestore presence mirror                  
+  try{                  
+    const fs = window.db || firebase.firestore();                  
+    fs.collection("presence").where("online","==",true).onSnapshot(async (qs)=>{                  
+      const now = Date.now();                  
+      const out = new Set();                  
+      qs.forEach(doc=>{                  
+        const d = doc.data() || {};                  
+        let lastMs = 0;                  
+        try{                  
+          if (d.lastSeen && d.lastSeen.toDate) lastMs = d.lastSeen.toDate().getTime();                  
+          else if (typeof d.lastSeen === "number") lastMs = d.lastSeen;                  
+          else if (d.lastSeen && d.lastSeen.seconds) lastMs = d.lastSeen.seconds*1000;                  
+        }catch(_){}                  
+        if ((now - lastMs) <= STALE_MS) out.add(doc.id);                  
+      });                  
+      onlineSets.mirror = out;                  
+      recompute();                  
+    }, err => console.warn("Presence mirror read error:", err));                  
+  }catch(e){ console.warn("Presence mirror init error:", e); }                  
+                  
+  // Expose recompute for region change                  
+  window.__presenceRecomputeCustomers = ()=>{ recompute(); };                  
+                  
+  setInterval(()=>recompute(), 60000);                  
+})();                  
+</script>              <!-- Region-aware Sellers Online -->              <script>                  
+(function sellersOnlineKPI(){                  
+  const RTDB_URL = "https://your-shop-3bdd1-default-rtdb.firebaseio.com";                  
+  const STALE_MS = 2 * 60 * 1000;                  
+  const el = document.getElementById("kpiSellersOnline");                  
+  if (el) el.textContent = "0";                  
+                  
+  const onlineSets = { rtdb: new Set(), mirror: new Set() };                  
+  const userCache = new Map(); // uid -> {role, region}                  
+                  
+  function setText(n){ if (el) el.textContent = String(n); }                  
+                  
+  async function getUserRoleRegion(uid){                  
+    if (userCache.has(uid)) return userCache.get(uid);                  
+    try{                  
+      const d = await (window.db || firebase.firestore()).collection("users").doc(uid).get();                  
+      const role = d.exists ? (d.get("role") || null) : null;                  
+      const region = d.exists ? (d.get("region") || "Unknown") : "Unknown";                  
+      const val = {role, region};                  
+      userCache.set(uid, val);                  
+      return val;                  
+    }catch(e){                  
+      const val = {role:null, region:"Unknown"};                  
+      userCache.set(uid, val);                  
+      return val;                  
+    }                  
+  }                  
+                  
+  async function recompute(){                  
+    const union = new Set([...onlineSets.rtdb, ...onlineSets.mirror]);                  
+    const selected = (window.__getSelectedRegion && window.__getSelectedRegion()) || "ALL";                  
+    let count = 0;                  
+    await Promise.all(Array.from(union).map(async uid=>{                  
+      const info = await getUserRoleRegion(uid);                  
+      if (info.role === "seller"){                  
+        if (selected==="ALL" || normalizeRegion(info.region)===normalizeRegion(selected)) count++;                  
+      }                  
+    }));                  
+    setText(count);                  
+  }                  
+                  
+  try{                  
+    const statusRef = firebase.database().refFromURL(`${RTDB_URL}/seller_status`);                  
+    statusRef.on("value", async (snap)=>{                  
+      const data = snap.val() || {};                  
+      const now = Date.now();                  
+      const out = new Set();                  
+      Object.keys(data).forEach(uid=>{                  
+        const s = data[uid] || {};                  
+        const online = (s.state === "online") || (s.online === true) || (s.state === true) || (s.status === "online");                  
+        const lastMs = (typeof s.last_changed === "number")                  
+          ? s.last_changed                  
+          : (s.last_changed && s.last_changed.seconds ? s.last_changed.seconds*1000                  
+             : (typeof s.lastSeen === "number" ? s.lastSeen                  
+                : (s.lastSeen && s.lastSeen.seconds ? s.lastSeen.seconds*1000                  
+                   : (typeof s.updatedAt === "number" ? s.updatedAt : now))));                  
+        if (online && (now - lastMs) <= STALE_MS) out.add(uid);                  
+      });                  
+      onlineSets.rtdb = out;                  
+      recompute();                  
+    }, err => console.warn("RTDB seller_status read error:", err));                  
+  }catch(e){ console.warn("RTDB init error:", e); }                  
+                  
+  try{                  
+    const fs = window.db || firebase.firestore();                  
+    fs.collection("presence").where("online","==",true).onSnapshot(async (qs)=>{                  
+      const now = Date.now();                  
+      const out = new Set();                  
+      qs.forEach(doc=>{                  
+        const d = doc.data() || {};                  
+        let lastMs = 0;                  
+        try{                  
+          if (d.lastSeen && d.lastSeen.toDate) lastMs = d.lastSeen.toDate().getTime();                  
+          else if (typeof d.lastSeen === "number") lastMs = d.lastSeen;                  
+          else if (d.lastSeen && d.lastSeen.seconds) lastMs = d.lastSeen.seconds*1000;                  
+        }catch(_){}                  
+        if ((now - lastMs) <= STALE_MS) out.add(doc.id);                  
+      });                  
+      onlineSets.mirror = out;                  
+      recompute();                  
+    }, err => console.warn("Presence mirror read error:", err));                  
+  }catch(e){ console.warn("Presence mirror init error:", e); }                  
+                  
+  window.__presenceRecomputeSellers = ()=>{ recompute(); };                  
+                  
+  setInterval(()=>recompute(), 60000);                  
+})();                  
+</script>              <!-- Wallet header + Wallet-by-Region chart (direct reads users/{uid}/meta/wallet) -->              <script>                  
+(function () {                  
+  if (!window.firebase || !firebase.apps || !firebase.apps.length) {                  
+    console.warn('[owner] Firebase not initialized yet. Wallet script skipped.');                  
+    return;                  
+  }                  
+  var db = firebase.firestore();                  
+                  
+  function setText(sel, val) {                  
+    var el = document.querySelector(sel);                  
+    if (el) el.textContent = val;                  
+  }                  
+  function formatMoney(amount, currency) {                  
+    try { return new Intl.NumberFormat('en-GB', { style: 'currency', currency: currency || 'XAF' }).format(Number(amount || 0)); }                  
+    catch (e) { return (Number(amount || 0).toLocaleString()) + ' ' + (currency || 'XAF'); }                  
+  }                  
+                  
+  var __walletUnsub = null;                  
+  function subscribeMyWallet(uid) {                  
+    var ref = db.collection('users').doc(uid).collection('meta').doc('wallet');                  
+    return ref.onSnapshot(function (snap) {                  
+      var data = snap.exists ? snap.data() : { balance: 0, currency: 'XAF' };                  
+      var pretty = formatMoney(data.balance || 0, data.currency || 'XAF');                  
+      setText('#walletBalance', pretty);                  
+      setText('#drawerBalance', pretty);                  
+      setText('#menuWallet',   pretty);                  
+    }, function (err) {                  
+      console.error('[owner] wallet listener error:', err);                  
+    });                  
+  }                  
+  firebase.auth().onAuthStateChanged(function (user) {                  
+    if (user) {                  
+      if (__walletUnsub) __walletUnsub();                  
+      __walletUnsub = subscribeMyWallet(user.uid);                  
+    }                  
+  });                  
+                  
+  var REGION_LIST = ['Adamawa','Centre','East','Far North','Littoral','North','North-West','West','South','South-West'];                  
+  function buildWalletBalancesByRegion() {                  
+    var canvas = document.getElementById('walletByRegionChart');                  
+    if (!canvas || !window.Chart) return;                  
+                  
+    var totals = {}; REGION_LIST.forEach(function(r){ totals[r] = 0; });                  
+                  
+    db.collection('users').get().then(function (usersSnap) {                  
+      var jobs = [];                  
+      usersSnap.forEach(function (uDoc) {                  
+        var region = uDoc.get('region') || 'Unknown';                  
+        if (!REGION_LIST.includes(region)) return;                  
+        jobs.push(                  
+          uDoc.ref.collection('meta').doc('wallet').get().then(function (wDoc) {                  
+            var bal = Number(wDoc.exists ? (wDoc.get('balance') || 0) : 0);                  
+            totals[region] += bal;                  
+          })                  
+        );                  
+      });                  
+      return Promise.all(jobs).then(function () {                  
+        var labels = REGION_LIST.slice();                  
+        var values = labels.map(function (r) { return totals[r] || 0; });                  
+        if (window.__walletRegionChart) window.__walletRegionChart.destroy();                  
+        window.__walletRegionChart = new Chart(canvas.getContext('2d'), {                  
+          type: 'bar',                  
+          data: { labels: labels, datasets: [{ label: 'Wallet Balances (XAF)', data: values }] },                  
+          options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: true } } }                  
+        });                  
+      });                  
+    }).catch(function (err) {                  
+      console.error('[owner] wallet-by-region error:', err);                  
+    });                  
+  }                  
+  window.addEventListener('load', function () { setTimeout(buildWalletBalancesByRegion, 300); });                  
+  window.buildWalletBalancesByRegion = buildWalletBalancesByRegion;                  
+})();                  
+</script>              </body>                  
+</html>

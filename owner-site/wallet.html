@@ -1,0 +1,1245 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Owner Portal — Wallet</title>
+
+  <!-- Colors for system/OS UI -->
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1220">
+
+  <!-- Optional libs for export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.1/dist/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    :root{
+      --brand:#0f3b66; --accent:#ff9900;
+      --bg:#f6f8fb; --card:#ffffff; --text:#0b1220; --muted:#6b7280; --line:#e5e7eb;
+      --btn:#0f3b66; --btnText:#ffffff; --danger:#d90429; --ok:#10b981; --chip:#eef2ff;
+    }
+    html[data-theme="dark"]{
+      --bg:#0b1220; --card:#111827; --text:#f7f8fd; --muted:#9aa3b2; --line:#1f2937;
+      --btn:#1f3b66; --btnText:#eaf2ff; --chip:#1f2937;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.45}
+
+    .app{min-height:100vh;display:grid;grid-template-columns:260px 1fr;grid-template-rows:auto 1fr}
+    @media (max-width: 980px){
+      .app{grid-template-columns:1fr}
+      aside.sidebar{grid-row:auto;background:var(--card);border-bottom:1px solid var(--line);border-right:none;position:sticky;top:0;z-index:10}
+      header{display:none}
+    }
+    aside.sidebar{grid-row:1 / span 2;background:var(--card);border-right:1px solid var(--line);padding:12px 14px;display:flex;gap:10px;flex-direction:column}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--brand),#1a5aa0);box-shadow:0 10px 30px rgba(15,59,102,.25)}
+    .brand h1{margin:0;font-size:1rem;color:var(--brand);letter-spacing:.3px}
+
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+    .icon-btn{border:1px solid var(--line);background:transparent;color:var(--text);height:40px;padding:0 12px;border-radius:10px;cursor:pointer;font-weight:700}
+    .backlink{border:1px solid var(--line);padding:8px 12px;border-radius:10px;text-decoration:none;color:var(--text);display:inline-flex;gap:8px;align-items:center}
+    .backlink svg{width:16px;height:16px}
+
+    header{grid-column:2;background:var(--card);border-bottom:1px solid var(--line);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .who{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .chip{background:var(--chip);border:1px solid var(--line);padding:6px 10px;border-radius:999px;font-size:.9rem;color:var(--brand);font-weight:800}
+
+    main{grid-column:2;padding:16px;display:grid;gap:14px}
+    .grid{display:grid;gap:12px}
+    .cols-2{grid-template-columns:2fr 1fr}
+    .cols-3{grid-template-columns:1.1fr 1fr 1fr}
+    @media (max-width: 1100px){ .cols-2,.cols-3{grid-template-columns:1fr} }
+
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 10px 40px rgba(0,0,0,.04)}
+    .card h3{margin:0 0 10px;font-size:1.05rem}
+    .row{display:grid;gap:8px}
+    .row-2{grid-template-columns:1fr 1fr}
+    .row-3{grid-template-columns:repeat(3,1fr)}
+    .row-4{grid-template-columns:repeat(4,1fr)}
+    @media (max-width:900px){ .row-2,.row-3,.row-4{grid-template-columns:1fr} }
+
+    label{font-weight:800}
+    input[type="file"],input[type="text"],input[type="email"],input[type="tel"],input[type="number"],input[type="date"],select,textarea{
+      width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:transparent;color:var(--text)
+    }
+    input:focus,select:focus,textarea:focus{outline:3px solid color-mix(in srgb, var(--brand) 30%, transparent)}
+    .btn{border:0;border-radius:12px;padding:10px 12px;font-weight:900;cursor:pointer;background:var(--btn);color:var(--btnText)}
+    .btn.secondary{background:transparent;color:var(--text);border:1px solid var(--line)}
+    .btn.danger{background:var(--danger)}
+    .btn-group{display:flex;gap:8px;flex-wrap:wrap}
+
+    .muted{color:var(--muted)}
+    .value{font-size:1.3rem;font-weight:900}
+
+    .warn{display:none;background:rgba(217,4,41,.1);border:1px solid rgba(217,4,41,.35);color:var(--danger);padding:10px 12px;border-radius:10px;font-weight:700}
+    .ok{display:none;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.45);color:var(--ok);padding:10px 12px;border-radius:10px;font-weight:700}
+    .show{display:block !important}
+
+    table{width:100%;border-collapse:collapse}
+    th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;font-size:.95rem}
+    th{font-weight:800;color:var(--muted)}
+    tbody tr:hover{background:color-mix(in srgb, var(--brand) 6%, transparent)}
+
+    /* Pills / tabs */
+    .pills{display:flex;gap:6px;flex-wrap:wrap}
+    .pill{padding:8px 12px;border:1px solid var(--line);border-radius:999px;cursor:pointer;font-weight:800}
+    .pill.active{background:var(--brand);border-color:var(--brand);color:#fff}
+
+    /* People list */
+    .list{display:grid;gap:8px;max-height:360px;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--bg)}
+    .person{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px}
+    .avatar{width:44px;height:44px;border-radius:10px;overflow:hidden;background:#e5e7eb;border:1px solid var(--line)}
+    .avatar img{width:100%;height:100%;object-fit:cover}
+    .person .meta{font-size:.85rem;color:var(--muted)}
+    .person .name{font-weight:900}
+    .person .pick{white-space:nowrap}
+
+    /* Footer actions bar for exports */
+    .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" role="navigation" aria-label="Secondary">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <h1>OWNER PORTAL</h1>
+      </div>
+
+      <a href="index.html" class="backlink">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        <span data-i18n="back.dashboard">Back to Dashboard</span>
+      </a>
+
+      <div class="toolbar">
+        <button id="langToggle" class="icon-btn" title="Language">EN</button>
+        <button id="themeToggle" class="icon-btn" title="Theme">🌓</button>
+        <button id="signOutBtn" class="icon-btn" data-i18n="btn.signout">Sign out</button>
+      </div>
+      <small class="muted">&copy; <span id="year"></span> Owner Portal</small>
+    </aside>
+
+    <!-- HEADER (desktop) -->
+    <header>
+      <div class="who">
+        <span class="chip" data-i18n="chip.owner">OWNER</span>
+        <span id="ownerEmail" class="chip">—</span>
+        <span id="ownerWallet" class="chip">—</span>
+      </div>
+      <div class="who">
+        <span id="configWarning" class="muted"></span>
+      </div>
+    </header>
+
+    <!-- MAIN -->
+    <main>
+      <!-- Alerts -->
+      <div id="alertErr" class="warn" role="status" aria-live="polite"></div>
+      <div id="alertOk"  class="ok"   role="status" aria-live="polite"></div>
+
+      <!-- Top Summary -->
+      <section class="grid cols-3">
+        <div class="card">
+          <h3 data-i18n="summary.myWallet">My Wallet</h3>
+          <div class="value" id="myBalance">—</div>
+          <div class="muted" id="myBalanceUpdated">—</div>
+          <div class="row row-3" style="margin-top:8px">
+            <div>
+              <label data-i18n="wallet.amount">Amount (XAF)</label>
+              <input id="topupAmount" type="number" step="1" placeholder="0">
+            </div>
+            <div>
+              <label data-i18n="wallet.note">Note</label>
+              <input id="topupNote" type="text" placeholder="Reason / note">
+            </div>
+            <div class="row" style="align-content:end">
+              <div class="btn-group">
+                <button id="btnTopup" class="btn" data-i18n="wallet.credit">Add Funds</button>
+                <button id="btnWithdraw" class="btn secondary" data-i18n="wallet.debit">Reduce Funds</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 data-i18n="send.title">Send Money</h3>
+          <div class="pills" role="tablist" aria-label="Send to">
+            <button class="pill active" data-role="customer" data-i18n="tab.customers">Customers</button>
+            <button class="pill" data-role="manager"  data-i18n="tab.managers">Managers</button>
+            <button class="pill" data-role="seller"   data-i18n="tab.sellers">Sellers</button>
+            <button class="pill" data-role="worker"   data-i18n="tab.workers">Workers</button>
+          </div>
+
+          <div class="row" style="margin-top:8px">
+            <label data-i18n="send.search">Search (name / email / UID)</label>
+            <input id="searchInput" type="text" placeholder="Type to filter…">
+          </div>
+
+          <div id="peopleList" class="list" aria-live="polite"></div>
+
+          <div class="row row-3" style="margin-top:8px">
+            <div>
+              <label data-i18n="send.selected">Selected</label>
+              <input id="selectedInfo" type="text" readonly placeholder="—">
+            </div>
+            <div>
+              <label data-i18n="wallet.amount">Amount (XAF)</label>
+              <input id="sendAmount" type="number" step="1" placeholder="0">
+            </div>
+            <div class="row" style="align-content:end">
+              <div class="btn-group">
+                <button id="btnSendMoney" class="btn" data-i18n="send.send">Send</button>
+                <!-- NOTE: Receive & Schedule buttons are injected dynamically in JS to keep HTML structure unchanged -->
+              </div>
+            </div>
+          </div>
+          <small class="muted" data-i18n="send.hint">Transfers are done atomically: your balance decreases and the recipient’s balance increases in one transaction.</small>
+        </div>
+
+        <div class="card">
+          <h3 data-i18n="summary.regionTitle">Region Balances</h3>
+          <div class="row row-2">
+            <div>
+              <label data-i18n="summary.region">Region</label>
+              <select id="regionSelect">
+                <option value="*All*" data-i18n="region.all">All Regions</option>
+                <option value="adamawa">Adamawa</option>
+                <option value="centre">Centre</option>
+                <option value="east">East</option>
+                <option value="far north">Far North</option>
+                <option value="littoral">Littoral</option>
+                <option value="north">North</option>
+                <option value="north-west">North-West</option>
+                <option value="west">West</option>
+                <option value="south">South</option>
+                <option value="south-west">South-West</option>
+              </select>
+            </div>
+            <div class="row" style="align-content:end">
+              <div class="btn-group">
+                <button id="btnComputeRegion" class="btn" data-i18n="summary.compute">Compute</button>
+                <button id="btnExportRegionXLSX" class="btn secondary">XLSX</button>
+                <button id="btnExportRegionPDF" class="btn secondary">PDF</button>
+              </div>
+            </div>
+          </div>
+          <div style="overflow:auto;margin-top:8px">
+            <table id="regionTable" aria-label="Region balances">
+              <thead>
+                <tr>
+                  <th data-i18n="th.region">Region</th>
+                  <th data-i18n="th.roleCustomer">Customers</th>
+                  <th data-i18n="th.roleSeller">Sellers</th>
+                  <th data-i18n="th.roleManager">Managers</th>
+                  <th data-i18n="th.roleWorker">Workers</th>
+                  <th data-i18n="th.total">Total</th>
+                </tr>
+              </thead>
+              <tbody id="regionTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- History -->
+      <section class="card">
+        <h3 data-i18n="history.title">My Wallet History</h3>
+        <div class="actions">
+          <div class="row row-3" style="flex:1">
+            <div>
+              <label data-i18n="history.from">From</label>
+              <input id="histFrom" type="date">
+            </div>
+            <div>
+              <label data-i18n="history.to">To</label>
+              <input id="histTo" type="date">
+            </div>
+            <div class="row" style="align-content:end">
+              <div class="btn-group">
+                <button id="btnReloadHistory" class="btn" data-i18n="history.reload">Reload</button>
+                <button id="btnExportHistXLSX" class="btn secondary">XLSX</button>
+                <button id="btnExportHistPDF" class="btn secondary">PDF</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="overflow:auto;margin-top:8px">
+          <table id="histTable" aria-label="Owner transactions">
+            <thead>
+              <tr>
+                <th data-i18n="th.date">Date</th>
+                <th data-i18n="th.type">Type</th>
+                <th data-i18n="th.amount">Amount</th>
+                <th data-i18n="th.note">Note</th>
+                <th data-i18n="th.counterpart">Counterpart</th>
+              </tr>
+            </thead>
+            <tbody id="histTbody"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Firebase (modular CDN) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import {
+      getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged, signOut
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import {
+      getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, onSnapshot, orderBy, addDoc, serverTimestamp, runTransaction, limit, Timestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+    /* ================== CONFIG ================== */
+    const firebaseConfig = {
+      apiKey: "AIzaSyCz446b_SZF8L1HykjAeHrc9LK9GVWX4Q4",
+      authDomain: "your-shop-3bdd1.firebaseapp.com",
+      projectId: "your-shop-3bdd1",
+      storageBucket: "your-shop-3bdd1.appspot.com",
+      messagingSenderId: "440558238881",
+      appId: "1:440558238881:web:b1594dc8a4bfd9089dc4e0"
+    };
+
+    // Optional Cloudinary cloud name (set globally if you wish): window.__CLOUDINARY_CLOUD__ = "your_cloud";
+    const CLOUDINARY_DEFAULT_CLOUD = window.__CLOUDINARY_CLOUD__ || "";
+
+    /* === Avatar-specific Cloudinary defaults (avatars only) === */
+    const AVATAR_CLOUD  = "divjjbwit";
+    const AVATAR_FOLDER = "unsigned_yours_shop";
+
+    /* ================== Helpers ================== */
+    const $ = (s)=>document.querySelector(s);
+    const $$ = (s)=>document.querySelectorAll(s);
+    const fmtXAF = (n)=> (typeof n==="number" ? new Intl.NumberFormat(undefined,{style:"currency",currency:"XAF",maximumFractionDigits:0}).format(n) : "—");
+
+    const State = {
+      lang: localStorage.getItem("lang") || (navigator.language?.startsWith("fr") ? "fr" : "en"),
+      theme: localStorage.getItem("theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"),
+      owner: null,
+      ownerWalletRef: null,
+      selectedRole: "customer",
+      selectedPerson: null,
+      peopleCache: [], // [{uid, data, walletBalance}]
+      histUnsub: null,
+      histRows: [],
+      regionRows: [],
+      schedules: [] // live snapshot of scheduled transactions
+    };
+
+    const I18N = {
+      en:{
+        "back.dashboard":"Back to Dashboard","btn.signout":"Sign out","chip.owner":"OWNER",
+        "summary.myWallet":"My Wallet","wallet.amount":"Amount (XAF)","wallet.note":"Note (optional)","wallet.credit":"Add Funds","wallet.debit":"Reduce Funds",
+        "send.title":"Send Money","tab.customers":"Customers","tab.managers":"Managers","tab.sellers":"Sellers","tab.workers":"Workers","send.search":"Search (name / email / UID)","send.selected":"Selected","send.send":"Send","send.hint":"Transfers are done atomically: your balance decreases and the recipient’s balance increases in one transaction.",
+        "summary.regionTitle":"Region Balances","summary.region":"Region","summary.compute":"Compute",
+        "region.all":"All Regions",
+        "history.title":"My Wallet History","history.from":"From","history.to":"To","history.reload":"Reload",
+        "th.region":"Region","th.roleCustomer":"Customers","th.roleSeller":"Sellers","th.roleManager":"Managers","th.roleWorker":"Workers","th.total":"Total",
+        "th.date":"Date","th.type":"Type","th.amount":"Amount","th.note":"Note","th.counterpart":"Counterpart",
+        "err.noauth":"You must be signed in. Redirecting…","err.verify":"Email not verified. Redirecting…","err.notowner":"Access restricted to Owner. Redirecting…","err.generic":"Something went wrong.",
+        "ok.saved":"Saved.","ok.credited":"Funds added.","ok.debited":"Funds reduced.","ok.sent":"Transfer completed."
+      },
+      fr:{
+        "back.dashboard":"Retour au tableau","btn.signout":"Se déconnecter","chip.owner":"PROPRIÉTAIRE",
+        "summary.myWallet":"Mon Portefeuille","wallet.amount":"Montant (XAF)","wallet.note":"Note (optionnelle)","wallet.credit":"Ajouter des fonds","wallet.debit":"Réduire les fonds",
+        "send.title":"Envoyer de l’argent","tab.customers":"Clients","tab.managers":"Gestionnaires","tab.sellers":"Vendeurs","tab.workers":"Employés","send.search":"Recherche (nom / e-mail / UID)","send.selected":"Sélection","send.send":"Envoyer","send.hint":"Les transferts sont atomiques : votre solde diminue et celui du destinataire augmente en une seule opération.",
+        "summary.regionTitle":"Soldes par région","summary.region":"Région","summary.compute":"Calculer",
+        "region.all":"Toutes les régions",
+        "history.title":"Historique de mon portefeuille","history.from":"Du","history.to":"Au","history.reload":"Recharger",
+        "th.region":"Région","th.type":"Type","th.amount":"Montant","th.note":"Note","th.counterpart":"Contrepartie",
+        "err.noauth":"Vous devez être connecté. Redirection…","err.verify":"E-mail non vérifié. Redirection…","err.notowner":"Accès réservé au Propriétaire. Redirection…","err.generic":"Un problème est survenu.",
+        "ok.saved":"Enregistré.","ok.credited":"Fonds ajoutés.","ok.debited":"Fonds réduits.","ok.sent":"Transfert effectué."
+      }
+    };
+    const t=(k,vars={})=>{
+      const str=(I18N[State.lang][k]||k);
+      return str.replace(/\{(\w+)\}/g,(_,m)=> vars[m] ?? "");
+    };
+    function applyLang(){
+      document.documentElement.setAttribute("lang", State.lang);
+      $("#langToggle").textContent = State.lang.toUpperCase();
+      document.querySelectorAll("[data-i18n]").forEach(el=>{ el.textContent = t(el.getAttribute("data-i18n")); });
+      // Refresh scheduled panel text if it exists
+      if(document.getElementById("schPanelCard")){
+        document.getElementById("schPanelCard").remove();
+        ensureScheduledPanel();
+        renderScheduledPanel();
+      }
+    }
+    function applyTheme(){
+      document.documentElement.setAttribute("data-theme", State.theme);
+      document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{
+        m.setAttribute("content", State.theme==="dark" ? "#0b1220" : "#ffffff");
+      });
+      const btn=$("#themeToggle"); if(btn){ btn.textContent="🌓"; btn.title=`Theme: ${State.theme}`; }
+    }
+
+    const showErr=(m)=>{ const el=$("#alertErr"); el.textContent=m; el.classList.add("show"); $("#alertOk").classList.remove("show"); };
+    const showOk =(m)=>{ const el=$("#alertOk");  el.textContent=m; el.classList.add("show"); $("#alertErr").classList.remove("show"); };
+
+    /* ================== Firebase boot ================== */
+    let app, auth, db;
+    try{
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db   = getFirestore(app);
+      await setPersistence(auth, browserLocalPersistence);
+      auth.useDeviceLanguage && auth.useDeviceLanguage();
+    }catch(e){
+      console.error(e);
+      const w=$("#configWarning"); if(w){ w.textContent = (State.lang==="fr" ? "Configuration Firebase invalide." : "Firebase config error."); }
+    }
+
+    /* ================== Wallet helpers ================== */
+    // Prefer existing "META/wallet" then "meta/wallet", fallback to "META/wallet"
+    async function getWalletRefPreferred(uid){
+      const refUpper = doc(db,"users",uid,"META","wallet");
+      const refLower = doc(db,"users",uid,"meta","wallet");
+      try{
+        const up = await getDoc(refUpper);
+        if(up.exists()) return refUpper;
+        const lo = await getDoc(refLower);
+        if(lo.exists()) return refLower;
+      }catch(_){}
+      return refUpper;
+    }
+    // Subscribe to wallet doc on both paths and show the latest updated one
+    function subscribeWallet(uid, onChange){
+      const refs = [doc(db,"users",uid,"META","wallet"), doc(db,"users",uid,"meta","wallet")];
+      let latest = 0;
+      const unsubs = refs.map(r =>
+        onSnapshot(r, (snap)=>{
+          if(!snap.exists()) return;
+          const d = snap.data();
+          const ts = d.updatedAt?.toMillis ? d.updatedAt.toMillis() :
+                     (d.updatedAt?.seconds? d.updatedAt.seconds*1000 : Date.now());
+          if(ts >= latest){ latest = ts; onChange(d); }
+        }, (err)=>console.warn("wallet sub err", err))
+      );
+      return ()=>unsubs.forEach(u=>{ try{u();}catch(_){ } });
+    }
+
+    /* ================== Auth guards ================== */
+    async function isOwner(uid){
+      try{
+        const snap = await getDoc(doc(db,"users",uid));
+        return snap.exists() && snap.data().role === "owner";
+      }catch(_){ return false; }
+    }
+
+    onAuthStateChanged(auth, async (u)=>{
+      if(!u){ showErr(t("err.noauth")); setTimeout(()=>location.assign("login.html"),900); return; }
+      if(!u.emailVerified){ showErr(t("err.verify")); setTimeout(async()=>{ try{ await signOut(auth);}catch(_){ } location.assign("login.html"); },900); return; }
+      if(!(await isOwner(u.uid))){ showErr(t("err.notowner")); setTimeout(async()=>{ try{ await signOut(auth);}catch(_){ } location.assign("login.html"); },900); return; }
+
+      State.owner = u;
+      $("#ownerEmail").textContent = u.email || "—";
+
+      // Owner wallet chip + summary
+      subscribeWallet(u.uid, (w)=>{
+        $("#ownerWallet").textContent = fmtXAF(w?.balance||0);
+        $("#myBalance").textContent = fmtXAF(w?.balance||0);
+        $("#myBalanceUpdated").textContent = w?.updatedAt?.toDate ? (w.updatedAt.toDate()).toLocaleString() : "";
+      });
+
+      // initial loads
+      loadPeople("customer");
+      loadHistory();
+      injectSendCardButtons();      // add Receive/Schedule buttons without changing HTML
+      ensureScheduledPanel();       // create the Scheduled Transactions panel (UI only)
+      watchSchedules(u.uid);        // live scheduler + table rendering
+    });
+
+    /* ================== People picker ================== */
+    function setActivePill(role){
+      $$(".pill").forEach(p=> p.classList.toggle("active", p.getAttribute("data-role")===role));
+    }
+    $$(".pill").forEach(p=>{
+      p.addEventListener("click", ()=>{
+        const role = p.getAttribute("data-role");
+        State.selectedRole = role;
+        setActivePill(role);
+        $("#searchInput").value="";
+        State.peopleCache = [];
+        renderPeople();
+        loadPeople(role);
+      });
+    });
+
+    $("#searchInput").addEventListener("input", ()=>{
+      renderPeople();
+    });
+
+    /* ===== Avatars (Cloudinary) — uses provided cloud & folder ===== */
+    function cloudinaryUrl(publicId, {cloud, folder, w=80, h=80}={}){
+      const cloudName = cloud || AVATAR_CLOUD || CLOUDINARY_DEFAULT_CLOUD;
+      if(!cloudName || !publicId) return "";
+
+      // If an absolute URL is provided, use it as-is
+      if(/^https?:\/\//i.test(publicId)) return publicId;
+
+      // Normalize the public ID and prepend folder if needed
+      let pid = String(publicId).replace(/^image\/upload\/?/,"").replace(/^v\d+\//,"");
+      const folderName = folder || AVATAR_FOLDER;
+      if(folderName && !pid.startsWith(folderName + "/")){
+        pid = `${folderName}/${pid}`;
+      }
+
+      return `https://res.cloudinary.com/${cloudName}/image/upload/c_fill,g_auto,f_auto,q_auto,w_${w},h_${h}/${encodeURIComponent(pid)}`;
+    }
+    function getAvatarUrl(d){
+      // Priority: explicit Cloudinary public IDs -> else absolute URLs from avatar/photoURL
+      const cloud  = d.cloudinaryCloud || AVATAR_CLOUD || CLOUDINARY_DEFAULT_CLOUD;
+      const folder = d.cloudinaryFolder || d.avatarFolder || AVATAR_FOLDER;
+      const pubId  = d.avatarPublicId || d.cloudinaryPublicId || d.avatar_id || d.cloudinaryId;
+
+      if(cloud && pubId) return cloudinaryUrl(pubId, { cloud, folder, w:80, h:80 });
+
+      // Only use raw avatar if it's an absolute URL (to avoid bypassing Cloudinary when a filename is stored)
+      if(typeof d.avatar==="string" && d.avatar && /^https?:\/\//i.test(d.avatar)) return d.avatar;
+      if(typeof d.photoURL==="string" && d.photoURL) return d.photoURL;
+
+      return "https://cdn.jsdelivr.net/gh/edent/SuperTinyIcons/images/svg/user.svg";
+    }
+
+    async function loadPeople(role){
+      const qRef = query(collection(db,"users"), where("role","==", role), limit(100));
+      onSnapshot(qRef, async (qs)=>{
+        const arr = [];
+        for(const d of qs.docs){
+          const data = d.data();
+          const uid = d.id;
+          // fetch wallet (best effort)
+          let bal = 0;
+          try{
+            const wRef = await getWalletRefPreferred(uid);
+            const wSnap = await getDoc(wRef);
+            bal = wSnap.exists()? (wSnap.data().balance||0) : 0;
+          }catch(_){}
+          arr.push({ uid, data, balance: bal });
+        }
+        State.peopleCache = arr;
+        renderPeople();
+      }, (err)=> console.warn("people load err", err));
+    }
+
+    function renderPeople(){
+      const list = $("#peopleList");
+      const q = ($("#searchInput").value || "").trim().toLowerCase();
+      list.innerHTML = "";
+
+      const filtered = State.peopleCache.filter(p=>{
+        const d=p.data;
+        const s = `${d.name||""} ${d.email||""} ${p.uid||""}`.toLowerCase();
+        return !q || s.includes(q);
+      });
+
+      if(filtered.length===0){
+        const empty = document.createElement("div");
+        empty.className="muted";
+        empty.textContent = State.lang==="fr" ? "Aucun résultat." : "No results.";
+        list.appendChild(empty);
+        return;
+      }
+
+      filtered.forEach(p=>{
+        const d=p.data;
+        const imgSrc = getAvatarUrl(d);
+        const row=document.createElement("div");
+        row.className="person";
+        row.innerHTML = `
+          <div class="avatar"><img src="${imgSrc}" alt=""></div>
+          <div>
+            <div class="name">${d.name || "—"}</div>
+            <div class="meta">${d.email || "—"} • ${p.uid}</div>
+            <div class="meta">${(d.region||"—")} • ${fmtXAF(p.balance||0)}</div>
+          </div>
+          <div class="pick">
+            <button class="btn secondary">${State.lang==="fr" ? "Choisir" : "Choose"}</button>
+          </div>
+        `;
+        row.querySelector(".btn").addEventListener("click", ()=>{
+          State.selectedPerson = p;
+          $("#selectedInfo").value = `${d.name||"—"} — ${d.email||"—"} — ${p.uid}`;
+        });
+        list.appendChild(row);
+      });
+    }
+
+    /* ================== Transfers ================== */
+    async function adjustOwnerSelf(type){
+      const raw = $("#topupAmount").value;
+      const note = $("#topupNote").value.trim();
+      const delta = Number(raw);
+      if(!raw || isNaN(delta) || delta<=0){ return showErr(State.lang==="fr" ? "Montant invalide." : "Invalid amount."); }
+
+      const ownerUid = State.owner?.uid;
+      const ownerRef = await getWalletRefPreferred(ownerUid);
+
+      try{
+        await runTransaction(db, async (tx)=>{
+          const ownerSnap = await tx.get(ownerRef);
+          const ownerBal  = ownerSnap.exists()? (ownerSnap.data().balance||0) : 0;
+          const next = type==="credit" ? ownerBal + delta : ownerBal - delta;
+          if(next < 0) throw new Error("owner_neg");
+          tx.set(ownerRef, { balance: next, currency:"XAF", updatedAt: serverTimestamp() }, { merge:true });
+
+          const ownerTxRef = doc(collection(db,"users",ownerUid,"wallet_tx"));
+          tx.set(ownerTxRef, {
+            type: type, amount: delta, note, by:"owner", counterpart: ownerUid, at: serverTimestamp()
+          });
+        });
+
+        if(type==="credit") showOk(t("ok.credited")); else showOk(t("ok.debited"));
+        $("#topupAmount").value=""; $("#topupNote").value="";
+      }catch(e){
+        console.error(e);
+        if(e.message==="owner_neg"){ showErr(State.lang==="fr" ? "Solde insuffisant." : "Insufficient balance."); }
+        else showErr(t("err.generic"));
+      }
+    }
+    $("#btnTopup").addEventListener("click", ()=>adjustOwnerSelf("credit"));
+    $("#btnWithdraw").addEventListener("click", ()=>adjustOwnerSelf("debit"));
+
+    async function transfer(direction, {target, amount, note}){
+      // direction: 'send' (owner -> target) or 'receive' (target -> owner)
+      const delta = Number(amount);
+      if(!target){ return showErr(State.lang==="fr" ? "Aucun destinataire sélectionné." : "No recipient selected."); }
+      if(!delta || isNaN(delta) || delta<=0){ return showErr(State.lang==="fr" ? "Montant invalide." : "Invalid amount."); }
+
+      const ownerUid = State.owner?.uid;
+      const fromUid  = (direction==="send") ? ownerUid : target.uid;
+      const toUid    = (direction==="send") ? target.uid : ownerUid;
+
+      const fromRef = await getWalletRefPreferred(fromUid);
+      const toRef   = await getWalletRefPreferred(toUid);
+
+      try{
+        await runTransaction(db, async (tx)=>{
+          const fromSnap = await tx.get(fromRef);
+          const toSnap   = await tx.get(toRef);
+
+          const fromBal = fromSnap.exists()? (fromSnap.data().balance||0) : 0;
+          const toBal   = toSnap.exists()? (toSnap.data().balance||0) : 0;
+
+          if(fromBal - delta < 0) throw new Error("neg");
+
+          tx.set(fromRef, { balance: fromBal - delta, currency:"XAF", updatedAt: serverTimestamp() }, { merge:true });
+          tx.set(toRef,   { balance: toBal   + delta, currency:"XAF", updatedAt: serverTimestamp() }, { merge:true });
+
+          const fromTxRef = doc(collection(db,"users",fromUid,"wallet_tx"));
+          const toTxRef   = doc(collection(db,"users",toUid,"wallet_tx"));
+
+          tx.set(fromTxRef, {
+            type:"debit", amount: delta, note: note || `${direction} → ${toUid}`, by:"owner", counterpart: toUid, at: serverTimestamp()
+          });
+          tx.set(toTxRef, {
+            type:"credit", amount: delta, note: note || `${direction} from ${fromUid}`, by:"owner", counterpart: fromUid, at: serverTimestamp()
+          });
+        });
+
+        showOk(direction==="send" ? t("ok.sent") : (State.lang==="fr" ? "Reçu." : "Received."));
+        $("#sendAmount").value="";
+      }catch(e){
+        console.error(e);
+        if(e?.code === "permission-denied"){
+          showErr(State.lang==="fr"
+            ? "Règles Firestore : écriture du portefeuille refusée."
+            : "Firestore rules blocked this wallet write.");
+          return;
+        }
+        if(e.message==="neg"){ showErr(State.lang==="fr" ? "Solde insuffisant." : "Insufficient balance."); }
+        else showErr(t("err.generic"));
+      }
+    }
+
+    $("#btnSendMoney").addEventListener("click", ()=>{
+      const target = State.selectedPerson;
+      const amount = $("#sendAmount").value;
+      transfer("send", { target, amount });
+    });
+
+    // Inject "Receive" and "Schedule" buttons without changing your HTML markup
+    function injectSendCardButtons(){
+      const group = $("#btnSendMoney")?.closest(".btn-group");
+      if(!group) return;
+
+      // Receive button
+      const btnRecv = document.createElement("button");
+      btnRecv.id = "btnReceiveMoney";
+      btnRecv.className = "btn secondary";
+      btnRecv.textContent = (State.lang==="fr" ? "Recevoir" : "Receive");
+      btnRecv.addEventListener("click", ()=>{
+        const target = State.selectedPerson;
+        const amount = $("#sendAmount").value;
+        transfer("receive", { target, amount });
+      });
+      group.appendChild(btnRecv);
+
+      // Schedule (send)
+      const btnScheduleSend = document.createElement("button");
+      btnScheduleSend.id = "btnScheduleSend";
+      btnScheduleSend.className = "btn secondary";
+      btnScheduleSend.textContent = (State.lang==="fr" ? "Programmer envoi" : "Schedule Send");
+      btnScheduleSend.addEventListener("click", ()=> openScheduleDialog("send"));
+      group.appendChild(btnScheduleSend);
+
+      // Schedule (receive)
+      const btnScheduleRecv = document.createElement("button");
+      btnScheduleRecv.id = "btnScheduleReceive";
+      btnScheduleRecv.className = "btn secondary";
+      btnScheduleRecv.textContent = (State.lang==="fr" ? "Programmer réception" : "Schedule Receive");
+      btnScheduleRecv.addEventListener("click", ()=> openScheduleDialog("receive"));
+      group.appendChild(btnScheduleRecv);
+    }
+
+    /* ================== Calendar-based Scheduler UI ================== */
+    function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+    function addMonths(d,n){ const x=new Date(d); const day=x.getDate(); x.setMonth(x.getMonth()+n); if(x.getDate()<day){ x.setDate(0); } return x; }
+    function addYears(d,n){ const x=new Date(d); x.setFullYear(x.getFullYear()+n); return x; }
+    function nextAfter(now, start, mode){
+      let cur = new Date(start);
+      if(mode==="once") return (cur>now) ? cur : null;
+      while(cur <= now){
+        if(mode==="daily")   cur = addDays(cur,1);
+        else if(mode==="weekly")  cur = addDays(cur,7);
+        else if(mode==="monthly") cur = addMonths(cur,1);
+        else if(mode==="yearly")  cur = addYears(cur,1);
+        else break;
+      }
+      return cur;
+    }
+
+    function dtLocalValue(d){
+      const pad = (n)=> String(n).padStart(2,"0");
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function openScheduleDialog(direction){
+      const target = State.selectedPerson;
+      if(!target){
+        showErr(State.lang==="fr" ? "Aucun destinataire sélectionné." : "No recipient selected.");
+        return;
+      }
+
+      // Overlay
+      const overlay = document.createElement("div");
+      overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:9999;";
+      overlay.addEventListener("click", (e)=>{ if(e.target===overlay) document.body.removeChild(overlay); });
+
+      // Modal card (uses existing card look & variables)
+      const card = document.createElement("div");
+      card.className = "card";
+      card.style.cssText = "width:min(520px,92vw);max-width:520px;border:1px solid var(--line);background:var(--card);";
+      const title = (State.lang==="fr"
+        ? (direction==="send" ? "Programmer un envoi" : "Programmer une réception")
+        : (direction==="send" ? "Schedule Send" : "Schedule Receive"));
+
+      const now = new Date();
+      now.setMinutes(now.getMinutes()+10,0,0);
+
+      card.innerHTML = `
+        <h3 style="margin-bottom:12px">${title}</h3>
+        <div class="row row-2">
+          <div>
+            <label>${State.lang==="fr" ? "Destinataire" : "Recipient"}</label>
+            <input type="text" value="${(target.data?.name||"—")} — ${(target.data?.email||"—")} — ${target.uid}" readonly>
+          </div>
+          <div>
+            <label>${State.lang==="fr" ? "Montant (XAF)" : "Amount (XAF)"}</label>
+            <input id="schAmount" type="number" step="1" value="${Number($("#sendAmount").value||0)}" placeholder="0">
+          </div>
+
+          <div>
+            <label>${State.lang==="fr" ? "Date & heure" : "Date & time"}</label>
+            <input id="schWhen" type="datetime-local" value="${dtLocalValue(now)}">
+          </div>
+          <div>
+            <label>${State.lang==="fr" ? "Fréquence" : "Frequency"}</label>
+            <select id="schFreq">
+              <option value="once">${State.lang==="fr" ? "Une seule fois" : "Once"}</option>
+              <option value="daily">${State.lang==="fr" ? "Quotidienne" : "Daily"}</option>
+              <option value="weekly">${State.lang==="fr" ? "Hebdomadaire" : "Weekly"}</option>
+              <option value="monthly">${State.lang==="fr" ? "Mensuelle" : "Monthly"}</option>
+              <option value="yearly">${State.lang==="fr" ? "Annuelle" : "Yearly"}</option>
+            </select>
+          </div>
+
+          <div style="grid-column:1/-1">
+            <label>${State.lang==="fr" ? "Note (optionnelle)" : "Note (optional)"}</label>
+            <input id="schNote" type="text" placeholder="${State.lang==="fr" ? "Raison / note" : "Reason / note"}">
+          </div>
+
+          <div style="grid-column:1/-1;display:flex;align-items:center;gap:8px">
+            <input id="schContinuous" type="checkbox">
+            <label for="schContinuous" style="margin:0">${State.lang==="fr" ? "Continu (pour toujours)" : "Continuous (for life)"}</label>
+          </div>
+        </div>
+        <div class="btn-group" style="margin-top:10px;justify-content:flex-end">
+          <button id="schCancel" class="btn secondary">${State.lang==="fr" ? "Annuler" : "Cancel"}</button>
+          <button id="schSave" class="btn">${State.lang==="fr" ? "Programmer" : "Schedule"}</button>
+        </div>
+      `;
+
+      overlay.appendChild(card);
+      document.body.appendChild(overlay);
+
+      $("#schCancel").addEventListener("click", ()=> document.body.removeChild(overlay));
+      $("#schSave").addEventListener("click", async ()=>{
+        const amount = Number($("#schAmount").value||"0");
+        if(!amount || isNaN(amount) || amount<=0){
+          showErr(State.lang==="fr" ? "Montant invalide." : "Invalid amount.");
+          return;
+        }
+        const whenVal = $("#schWhen").value;
+        if(!whenVal){
+          showErr(State.lang==="fr" ? "Choisissez une date et une heure." : "Pick a date and time.");
+          return;
+        }
+        const start = new Date(whenVal);
+        if(isNaN(start.getTime())){
+          showErr(State.lang==="fr" ? "Date invalide." : "Invalid date.");
+          return;
+        }
+        const freq = $("#schFreq").value;
+        const note = ($("#schNote").value||"").trim();
+        const continuous = $("#schContinuous").checked;
+
+        const next = nextAfter(new Date(), start, freq);
+
+        const ownerUid = State.owner?.uid;
+        try{
+          await addDoc(collection(db,"users",ownerUid,"scheduled_tx"), {
+            action: direction,
+            targetUid: target.uid,
+            targetEmail: target.data?.email || null,
+            amount, note,
+            schedule: { mode: freq, startAt: Timestamp.fromDate(start), continuous },
+            status: "active",
+            nextRunAt: next ? Timestamp.fromDate(next) : null,
+            lastRunAt: null,
+            createdAt: serverTimestamp()
+          });
+          showOk(State.lang==="fr" ? "Planifié." : "Scheduled.");
+          document.body.removeChild(overlay);
+        }catch(e){
+          console.error(e);
+          showErr(State.lang==="fr" ? "Échec de la planification." : "Failed to schedule.");
+        }
+      });
+    }
+
+    /* ================== Scheduled Transactions Panel (injected UI) ================== */
+    function ensureScheduledPanel(){
+      if(document.getElementById("schPanelCard")) return;
+      const main = document.querySelector("main");
+      if(!main) return;
+
+      const card = document.createElement("section");
+      card.className = "card";
+      card.id = "schPanelCard";
+      card.innerHTML = `
+        <h3>${State.lang==="fr"?"Transactions programmées (à venir)":"Scheduled Transactions (Upcoming)"}</h3>
+        <div class="row row-4" style="margin-bottom:8px">
+          <div>
+            <label>${State.lang==="fr"?"Prochain dans":"Within"}</label>
+            <select id="schFilterWithin">
+              <option value="">${State.lang==="fr"?"Tout":"All"}</option>
+              <option value="7">7 ${State.lang==="fr"?"jours":"days"}</option>
+              <option value="30">30 ${State.lang==="fr"?"jours":"days"}</option>
+              <option value="90">90 ${State.lang==="fr"?"jours":"days"}</option>
+            </select>
+          </div>
+          <div>
+            <label>${State.lang==="fr"?"Année":"Year"}</label>
+            <select id="schFilterYear">
+              <option value="">${State.lang==="fr"?"Toutes":"All"}</option>
+            </select>
+          </div>
+          <div>
+            <label>${State.lang==="fr"?"De":"From"}</label>
+            <input id="schFilterFrom" type="date">
+          </div>
+          <div>
+            <label>${State.lang==="fr"?"À":"To"}</label>
+            <input id="schFilterTo" type="date">
+          </div>
+          <div>
+            <label>${State.lang==="fr"?"Montant min":"Min Amount"}</label>
+            <input id="schFilterMin" type="number" step="1" placeholder="0">
+          </div>
+          <div>
+            <label>${State.lang==="fr"?"Montant max":"Max Amount"}</label>
+            <input id="schFilterMax" type="number" step="1" placeholder="0">
+          </div>
+        </div>
+        <div style="overflow:auto">
+          <table id="schTable" aria-label="Scheduled transactions">
+            <thead>
+              <tr>
+                <th>${State.lang==="fr"?"Date":"Date"}</th>
+                <th>${State.lang==="fr"?"Type":"Type"}</th>
+                <th>${State.lang==="fr"?"Destinataire":"Recipient"}</th>
+                <th>${State.lang==="fr"?"Montant":"Amount"}</th>
+                <th>${State.lang==="fr"?"Fréquence":"Frequency"}</th>
+                <th>${State.lang==="fr"?"Note":"Note"}</th>
+              </tr>
+            </thead>
+            <tbody id="schTbody"></tbody>
+          </table>
+        </div>
+      `;
+      main.appendChild(card);
+
+      ["#schFilterWithin","#schFilterYear","#schFilterFrom","#schFilterTo","#schFilterMin","#schFilterMax"].forEach(sel=>{
+        card.querySelector(sel).addEventListener("input", renderScheduledPanel);
+        card.querySelector(sel).addEventListener("change", renderScheduledPanel);
+      });
+    }
+
+    function refreshSchYearOptions(){
+      const sel = document.getElementById("schFilterYear");
+      if(!sel) return;
+      const keep = sel.value;
+      const years = Array.from(new Set(
+        State.schedules.map(s=>{
+          const d = s.data?.nextRunAt?.toDate ? s.data.nextRunAt.toDate()
+                  : (s.data?.schedule?.startAt?.toDate ? s.data.schedule.startAt.toDate() : null);
+          return d ? d.getFullYear() : null;
+        }).filter(Boolean)
+      )).sort((a,b)=>a-b);
+      sel.innerHTML = `<option value="">${State.lang==="fr"?"Toutes":"All"}</option>` + years.map(y=>`<option value="${y}">${y}</option>`).join("");
+      if(keep && years.includes(Number(keep))) sel.value = keep;
+    }
+
+    function renderScheduledPanel(){
+      ensureScheduledPanel();
+      refreshSchYearOptions();
+
+      const tb = document.getElementById("schTbody");
+      if(!tb) return;
+      tb.innerHTML = "";
+
+      const now = new Date();
+      let items = State.schedules
+        .map(s=>({ id:s.id, ...s.data }))
+        .filter(d=> d.status==="active" && d.nextRunAt?.toDate);
+
+      // Upcoming only by default
+      items = items.filter(d=> d.nextRunAt.toDate().getTime() >= now.getTime()-5000);
+
+      // Within X days
+      const withinVal = (document.getElementById("schFilterWithin")?.value || "").trim();
+      if(withinVal){
+        const ms = Number(withinVal)*24*60*60*1000;
+        const lim = now.getTime()+ms;
+        items = items.filter(d=>{
+          const t = d.nextRunAt.toDate().getTime();
+          return t <= lim;
+        });
+      }
+
+      // Date range
+      const fromVal = document.getElementById("schFilterFrom")?.value;
+      if(fromVal){
+        const f = new Date(fromVal);
+        const fStart = new Date(f.getFullYear(), f.getMonth(), f.getDate());
+        items = items.filter(d=> d.nextRunAt.toDate() >= fStart);
+      }
+      const toVal = document.getElementById("schFilterTo")?.value;
+      if(toVal){
+        const t = new Date(toVal);
+        const tEnd = new Date(t.getFullYear(), t.getMonth(), t.getDate(), 23,59,59,999);
+        items = items.filter(d=> d.nextRunAt.toDate() <= tEnd);
+      }
+
+      // Year
+      const yearVal = document.getElementById("schFilterYear")?.value;
+      if(yearVal){
+        items = items.filter(d=> d.nextRunAt.toDate().getFullYear() === Number(yearVal));
+      }
+
+      // Amount min/max
+      const minAmt = Number(document.getElementById("schFilterMin")?.value || "0");
+      const maxRaw = document.getElementById("schFilterMax")?.value;
+      if(minAmt>0){ items = items.filter(d=> (d.amount||0) >= minAmt); }
+      if(maxRaw && !isNaN(Number(maxRaw))){
+        const maxAmt = Number(maxRaw);
+        items = items.filter(d=> (d.amount||0) <= maxAmt);
+      }
+
+      // Sort by nextRunAt asc
+      items.sort((a,b)=> (a.nextRunAt.toMillis?.() ?? 0) - (b.nextRunAt.toMillis?.() ?? 0));
+
+      if(items.length===0){
+        const tr=document.createElement("tr");
+        const td=document.createElement("td");
+        td.colSpan=6; td.className="muted";
+        td.textContent = State.lang==="fr" ? "Aucune transaction programmée." : "No scheduled transactions.";
+        tr.appendChild(td); tb.appendChild(tr); return;
+      }
+
+      const freqMap = {
+        once: (State.lang==="fr"?"Une fois":"Once"),
+        daily:(State.lang==="fr"?"Quotidienne":"Daily"),
+        weekly:(State.lang==="fr"?"Hebdomadaire":"Weekly"),
+        monthly:(State.lang==="fr"?"Mensuelle":"Monthly"),
+        yearly:(State.lang==="fr"?"Annuelle":"Yearly")
+      };
+
+      items.forEach(d=>{
+        const dt = d.nextRunAt?.toDate ? d.nextRunAt.toDate() : null;
+        const tr=document.createElement("tr");
+        const dir = d.action==="receive" ? (State.lang==="fr"?"Recevoir":"Receive") : (State.lang==="fr"?"Envoyer":"Send");
+        const freq = freqMap[d.schedule?.mode || "once"] || (d.schedule?.mode || "");
+        tr.innerHTML = `
+          <td>${dt ? dt.toLocaleString() : "—"}</td>
+          <td>${dir}</td>
+          <td>${d.targetEmail || d.targetUid || "—"}</td>
+          <td>${fmtXAF(d.amount||0)}</td>
+          <td>${freq}${d.schedule?.continuous ? (State.lang==="fr"?" (continu)":" (continuous)") : ""}</td>
+          <td>${d.note || "—"}</td>
+        `;
+        tb.appendChild(tr);
+      });
+    }
+
+    function watchSchedules(ownerUid){
+      const qRef = query(collection(db,"users",ownerUid,"scheduled_tx"));
+      onSnapshot(qRef, (qs)=>{
+        State.schedules = qs.docs.map(d=>({ id:d.id, data:d.data() }));
+        renderScheduledPanel();
+      }, (e)=> console.warn("schedules err", e));
+
+      // Check every 20s if something is due (client-side fallback runner)
+      setInterval(runDueSchedules, 20000);
+    }
+
+    async function runDueSchedules(){
+      const now = Date.now();
+      for(const s of State.schedules){
+        const d = s.data;
+        if(d.status!=="active") continue;
+        const next = d.nextRunAt?.toMillis ? d.nextRunAt.toMillis() : null;
+        if(!next || next > now + 5000) continue; // not yet due
+
+        const ref = doc(db,"users",State.owner.uid,"scheduled_tx", s.id);
+        try{
+          // Lock & validate inside a transaction
+          let snapData;
+          await runTransaction(db, async (tx)=>{
+            const snap = await tx.get(ref);
+            if(!snap.exists()) throw new Error("gone");
+            snapData = snap.data();
+            if(snapData.status!=="active") throw new Error("skip");
+            const n = snapData.nextRunAt?.toMillis ? snapData.nextRunAt.toMillis() : 0;
+            if(n > Date.now()+5000) throw new Error("notyet");
+            tx.update(ref, { status:"running", runningAt: serverTimestamp() });
+          });
+
+          // Execute
+          const target = { uid: snapData.targetUid, data: { email: snapData.targetEmail || "" } };
+          await transfer(snapData.action, { target, amount: snapData.amount, note: snapData.note });
+
+          // Compute next
+          const startAt = snapData.schedule?.startAt?.toDate ? snapData.schedule.startAt.toDate() : new Date();
+          const mode = snapData.schedule?.mode || "once";
+          const cont = !!snapData.schedule?.continuous;
+
+          let newStatus = "done";
+          let nextDate = null;
+          if(mode!=="once" || cont){
+            const nxt = nextAfter(new Date(), startAt, mode);
+            if(nxt){ newStatus = "active"; nextDate = Timestamp.fromDate(nxt); }
+          }
+
+          await updateDoc(ref, {
+            status: newStatus,
+            lastRunAt: serverTimestamp(),
+            nextRunAt: nextDate || null,
+            runningAt: null
+          });
+
+          // Update the panel immediately
+          renderScheduledPanel();
+        }catch(e){
+          // Release lock on error
+          try{ await updateDoc(doc(db,"users",State.owner.uid,"scheduled_tx", s.id), { status:"active", runningAt: null }); }catch(_){}
+          console.warn("schedule run err", e);
+        }
+      }
+    }
+
+    /* ================== Region totals ================== */
+    function setRegionTable(rows){
+      const tb=$("#regionTbody"); tb.innerHTML="";
+      rows.forEach(r=>{
+        const tr=document.createElement("tr");
+        tr.innerHTML = `
+          <td>${r.region}</td>
+          <td>${fmtXAF(r.customers)}</td>
+          <td>${fmtXAF(r.sellers)}</td>
+          <td>${fmtXAF(r.managers)}</td>
+          <td>${fmtXAF(r.workers)}</td>
+          <td>${fmtXAF(r.total)}</td>
+        `;
+        tb.appendChild(tr);
+      });
+    }
+
+    async function fetchWalletBalance(uid){
+      try{
+        const ref = await getWalletRefPreferred(uid);
+        const snap = await getDoc(ref);
+        return snap.exists()? (snap.data().balance||0) : 0;
+      }catch(_){ return 0; }
+    }
+
+    const ROLES = ["customer","seller","manager","worker"];
+    const REGIONS = ["adamawa","centre","east","far north","littoral","north","north-west","west","south","south-west"];
+
+    async function computeRegion(selected){
+      const rows = [];
+
+      async function sumForRegion(region){
+        const sums = { customers:0, sellers:0, managers:0, workers:0 };
+        // Pull users by role (avoid large 'in' limitations)
+        for(const role of ROLES){
+          const qRef = region==="*All*"
+            ? query(collection(db,"users"), where("role","==",role), limit(500))
+            : query(collection(db,"users"), where("role","==",role), where("region","==", region), limit(500));
+          const snap = await getDocsSafe(qRef);
+          const tasks=[];
+          snap.forEach(d=>{
+            tasks.push(fetchWalletBalance(d.id).then(b=>{
+              if(role==="customer") sums.customers += b;
+              if(role==="seller")   sums.sellers   += b;
+              if(role==="manager")  sums.managers  += b;
+              if(role==="worker")   sums.workers   += b;
+            }));
+          });
+          await Promise.all(tasks);
+        }
+        const total = sums.customers+sums.sellers+sums.managers+sums.workers;
+        return { region: region==="*All*"? (State.lang==="fr"?"Toutes les régions":"All Regions") : toTitle(region), ...sums, total };
+      }
+
+      if(selected==="*All*"){
+        for(const r of REGIONS){
+          rows.push(await sumForRegion(r));
+        }
+      }else{
+        rows.push(await sumForRegion(selected));
+      }
+
+      State.regionRows = rows;
+      setRegionTable(rows);
+    }
+
+    async function getDocsSafe(qRef){
+      const { getDocs } = await import("https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js");
+      try{ return await getDocs(qRef); }catch(e){ console.error(e); return { forEach:()=>{} }; }
+    }
+
+    const toTitle = (s)=> s.replace(/\b\w/g, c=>c.toUpperCase());
+
+    $("#btnComputeRegion").addEventListener("click", ()=>{
+      const val=$("#regionSelect").value;
+      const picked = (val==="*All*")? "*All*" : val.toLowerCase();
+      computeRegion(picked);
+    });
+
+    /* ================== History (owner wallet_tx) ================== */
+    function renderHistory(){
+      const tb=$("#histTbody"); tb.innerHTML="";
+      const from = $("#histFrom").value ? new Date($("#histFrom").value) : null;
+      const to   = $("#histTo").value   ? new Date($("#histTo").value)   : null;
+
+      const rows = State.histRows.filter(r=>{
+        const d=r.at?.toDate ? r.at.toDate() : new Date();
+        if(from && d < new Date(from.getFullYear(), from.getMonth(), from.getDate())) return false;
+        if(to && d > new Date(to.getFullYear(), to.getMonth(), to.getDate(), 23,59,59,999)) return false;
+        return true;
+      });
+
+      rows.sort((a,b)=>{
+        const ta=a.at?.toMillis ? a.at.toMillis() : 0;
+        const tb=b.at?.toMillis ? b.at.toMillis() : 0;
+        return tb-ta;
+      });
+
+      rows.forEach(r=>{
+        const d=r.at?.toDate ? r.at.toDate() : new Date();
+        const tr=document.createElement("tr");
+        tr.innerHTML = `
+          <td>${d.toLocaleString()}</td>
+          <td>${r.type}</td>
+          <td>${fmtXAF(r.amount||0)}</td>
+          <td>${r.note||"—"}</td>
+          <td>${r.counterpart||"—"}</td>
+        `;
+        tb.appendChild(tr);
+      });
+    }
+
+    function loadHistory(){
+      if(State.histUnsub) try{ State.histUnsub(); }catch(_){}
+      const uid = State.owner?.uid;
+      const qRef = query(collection(db,"users", uid, "wallet_tx"), orderBy("at","desc"), limit(300));
+      State.histUnsub = onSnapshot(qRef, (qs)=>{
+        State.histRows = qs.docs.map(d=> d.data());
+        renderHistory();
+      }, (e)=> console.warn("hist err", e));
+    }
+    $("#btnReloadHistory").addEventListener("click", renderHistory);
+
+    /* ================== Export helpers ================== */
+    function exportTableToXLSX(tableId, filename){
+      try{
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.table_to_sheet(document.getElementById(tableId));
+        XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+        XLSX.writeFile(wb, filename + ".xlsx");
+      }catch(e){
+        console.error(e); showErr(State.lang==="fr" ? "Export XLSX a échoué." : "XLSX export failed.");
+      }
+    }
+    function exportTableToPDF(tableId, title){
+      try{
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.text(title, 14, 14);
+        doc.autoTable({ html: "#" + tableId, startY: 20 });
+        doc.save(title.replace(/\s+/g,"_") + ".pdf");
+      }catch(e){
+        console.error(e); showErr(State.lang==="fr" ? "Export PDF a échoué." : "PDF export failed.");
+      }
+    }
+    $("#btnExportRegionXLSX").addEventListener("click", ()=> exportTableToXLSX("regionTable", "region_balances"));
+    $("#btnExportRegionPDF").addEventListener("click", ()=> exportTableToPDF("regionTable", "Region Balances"));
+    $("#btnExportHistXLSX").addEventListener("click", ()=> exportTableToXLSX("histTable", "wallet_history"));
+    $("#btnExportHistPDF").addEventListener("click", ()=> exportTableToPDF("histTable", "Wallet History"));
+
+    /* ================== UI actions ================== */
+    $("#langToggle").addEventListener("click", ()=>{ State.lang=State.lang==="en"?"fr":"en"; localStorage.setItem("lang",State.lang); applyLang(); });
+    $("#themeToggle").addEventListener("click", ()=>{ State.theme=State.theme==="light"?"dark":"light"; localStorage.setItem("theme",State.theme); applyTheme(); });
+    $("#signOutBtn").addEventListener("click", async ()=>{
+      try{ await signOut(auth); }catch(_){}
+      location.assign("login.html");
+    });
+
+    /* ================== Boot UI ================== */
+    (function boot(){
+      const y=new Date().getFullYear(); $("#year").textContent=y;
+      applyLang(); applyTheme();
+    })();
+  </script>
+</body>
+</html>

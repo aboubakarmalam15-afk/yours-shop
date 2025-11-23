@@ -1,0 +1,906 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Owner Portal — Customer Dashboard</title>
+
+  <!-- Colors for system/OS UI -->
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1220">
+
+  <!-- Chart.js for charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <style>
+    :root{
+      --brand:#0f3b66; --accent:#ff9900;
+      --bg:#f6f8fb; --card:#ffffff; --text:#0b1220; --muted:#6b7280; --line:#e5e7eb;
+      --btn:#0f3b66; --btnText:#ffffff; --danger:#d90429; --ok:#10b981; --chip:#eef2ff;
+    }
+    html[data-theme="dark"]{
+      --bg:#0b1220; --card:#111827; --text:#f7f8fd; --muted:#9aa3b2; --line:#1f2937;
+      --btn:#1f3b66; --btnText:#eaf2ff; --chip:#1f2937;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;height:100%}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.45}
+
+    .app{min-height:100vh;display:grid;grid-template-columns:260px 1fr;grid-template-rows:auto 1fr}
+    @media (max-width: 980px){
+      .app{grid-template-columns:1fr}
+      aside.sidebar{grid-row:auto;background:var(--card);border-bottom:1px solid var(--line);border-right:none;position:sticky;top:0;z-index:10}
+      header{display:none}
+    }
+    aside.sidebar{grid-row:1 / span 2;background:var(--card);border-right:1px solid var(--line);padding:12px 14px;display:flex;gap:10px;flex-direction:column}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--brand),#1a5aa0);box-shadow:0 10px 30px rgba(15,59,102,.25)}
+    .brand h1{margin:0;font-size:1rem;color:var(--brand);letter-spacing:.3px}
+
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+    .icon-btn{border:1px solid var(--line);background:transparent;color:var(--text);height:40px;padding:0 12px;border-radius:10px;cursor:pointer;font-weight:700}
+    .backlink{border:1px solid var(--line);padding:8px 12px;border-radius:10px;text-decoration:none;color:var(--text);display:inline-flex;gap:8px;align-items:center}
+    .backlink svg{width:16px;height:16px}
+
+    header{grid-column:2;background:var(--card);border-bottom:1px solid var(--line);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .who{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .chip{background:var(--chip);border:1px solid var(--line);padding:6px 10px;border-radius:999px;font-size:.9rem;color:var(--brand);font-weight:800}
+
+    main{grid-column:2;padding:16px;display:grid;gap:14px}
+    .grid{display:grid;gap:12px}
+    .cols-2{grid-template-columns:2fr 1fr}
+    .cols-3{grid-template-columns:1.1fr 1fr 1fr}
+    @media (max-width: 1100px){ .cols-2,.cols-3{grid-template-columns:1fr} }
+
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 10px 40px rgba(0,0,0,.04)}
+    .card h3{margin:0 0 10px;font-size:1.05rem}
+    .row{display:grid;gap:8px}
+    .row-2{grid-template-columns:1fr 1fr}
+    .row-3{grid-template-columns:repeat(3,1fr)}
+    .row-4{grid-template-columns:repeat(4,1fr)}
+    @media (max-width:900px){ .row-2,.row-3,.row-4{grid-template-columns:1fr} }
+
+    label{font-weight:800}
+    input[type="file"],input[type="text"],input[type="email"],input[type="tel"],input[type="number"],input[type="date"],select,textarea{
+      width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:transparent;color:var(--text)
+    }
+    input:focus,select:focus,textarea:focus{outline:3px solid color-mix(in srgb, var(--brand) 30%, transparent)}
+    .btn{border:0;border-radius:12px;padding:10px 12px;font-weight:900;cursor:pointer;background:var(--btn);color:var(--btnText)}
+    .btn.secondary{background:transparent;color:var(--text);border:1px solid var(--line)}
+    .btn.danger{background:var(--danger)}
+    .btn-group{display:flex;gap:8px;flex-wrap:wrap}
+
+    .avatar{display:flex;gap:12px;align-items:center}
+    .avatar .pic{width:88px;height:88px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--bg)}
+    .avatar .pic img{width:100%;height:100%;object-fit:cover}
+    .muted{color:var(--muted)}
+    .value{font-size:1.3rem;font-weight:900}
+
+    .warn{display:none;background:rgba(217,4,41,.1);border:1px solid rgba(217,4,41,.35);color:var(--danger);padding:10px 12px;border-radius:10px;font-weight:700}
+    .ok{display:none;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.45);color:var(--ok);padding:10px 12px;border-radius:10px;font-weight:700}
+    .show{display:block !important}
+
+    table{width:100%;border-collapse:collapse}
+    th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;font-size:.95rem}
+    th{font-weight:800;color:var(--muted)}
+    tbody tr:hover{background:color-mix(in srgb, var(--brand) 6%, transparent)}
+
+    .chat{display:grid;gap:8px}
+    .msgs{max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--bg)}
+    .bubble{max-width:78%;padding:8px 10px;border-radius:12px;margin:6px 0}
+    .bubble.owner{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.45);margin-left:auto}
+    .bubble.customer{background:rgba(15,59,102,.1);border:1px solid rgba(15,59,102,.25)}
+    .bubble small{display:block;color:var(--muted);margin-top:4px}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar" role="navigation" aria-label="Secondary">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <h1>OWNER PORTAL</h1>
+      </div>
+
+      <a href="index.html" class="backlink">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        <span data-i18n="back.dashboard">Back to Dashboard</span>
+      </a>
+
+      <div class="toolbar">
+        <button id="langToggle" class="icon-btn" title="Language">EN</button>
+        <button id="themeToggle" class="icon-btn" title="Theme">🌓</button>
+        <button id="signOutBtn" class="icon-btn" data-i18n="btn.signout">Sign out</button>
+      </div>
+      <small class="muted">&copy; <span id="year"></span> Owner Portal</small>
+    </aside>
+
+    <!-- HEADER (desktop) -->
+    <header>
+      <div class="who">
+        <span class="chip" data-i18n="chip.owner">OWNER</span>
+        <span id="ownerEmail" class="chip">—</span>
+        <!-- Owner wallet display -->
+        <span id="ownerWallet" class="chip">—</span>
+      </div>
+      <div class="who">
+        <span id="configWarning" class="muted"></span>
+      </div>
+    </header>
+
+    <!-- MAIN -->
+    <main>
+      <!-- Alerts -->
+      <div id="alertErr" class="warn" role="status" aria-live="polite"></div>
+      <div id="alertOk"  class="ok"   role="status" aria-live="polite"></div>
+
+      <!-- Top Summary -->
+      <section class="grid cols-3">
+        <div class="card">
+          <h3 data-i18n="summary.customer">Customer</h3>
+          <div class="avatar">
+            <div class="pic"><img id="avatarImg" alt="avatar"></div>
+            <div>
+              <div id="custName" class="value">—</div>
+              <div class="muted" id="custEmail">—</div>
+              <div class="muted" id="custStatus">—</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3 data-i18n="summary.wallet">Wallet</h3>
+          <div class="value" id="walletBalance">—</div>
+          <div class="muted" id="walletUpdated">—</div>
+        </div>
+        <div class="card">
+          <h3 data-i18n="summary.spent">Total Spent</h3>
+          <div class="value" id="totalSpent">—</div>
+          <div class="muted" id="ordersCount">—</div>
+        </div>
+      </section>
+
+      <!-- Profile + Wallet -->
+      <section class="grid cols-2">
+        <div class="card">
+          <h3 data-i18n="profile.title">Profile</h3>
+          <div class="row row-2">
+            <div>
+              <label data-i18n="profile.name">Full name</label>
+              <input id="f_name" type="text" placeholder="Name">
+            </div>
+            <div>
+              <label data-i18n="profile.gender">Gender</label>
+              <select id="f_gender">
+                <option value="" data-i18n="opt.choose">— Choose —</option>
+                <option value="male" data-i18n="opt.male">Male</option>
+                <option value="female" data-i18n="opt.female">Female</option>
+                <option value="other" data-i18n="opt.other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label data-i18n="profile.phone">Phone</label>
+              <input id="f_phone" type="tel" placeholder="+237 6…">
+            </div>
+            <div>
+              <label data-i18n="profile.email">Email</label>
+              <input id="f_email" type="email" placeholder="user@example.com">
+            </div>
+
+            <div>
+              <label data-i18n="profile.region">Region</label>
+              <select id="f_region">
+                <!-- Cameroon’s 10 regions -->
+                <option value="" data-i18n="opt.choose">— Choose —</option>
+                <option value="Adamawa" data-i18n="region.adamawa">Adamawa</option>
+                <option value="Centre" data-i18n="region.centre">Centre</option>
+                <option value="East" data-i18n="region.east">East</option>
+                <option value="Far North" data-i18n="region.farnorth">Far North</option>
+                <option value="Littoral" data-i18n="region.littoral">Littoral</option>
+                <option value="North" data-i18n="region.north">North</option>
+                <option value="North-West" data-i18n="region.northwest">North-West</option>
+                <option value="West" data-i18n="region.west">West</option>
+                <option value="South" data-i18n="region.south">South</option>
+                <option value="South-West" data-i18n="region.southwest">South-West</option>
+              </select>
+            </div>
+            <div>
+              <label data-i18n="profile.birth">Birth date</label>
+              <input id="f_birth" type="date">
+            </div>
+
+            <div class="row" style="grid-column:1/-1">
+              <label data-i18n="profile.address">Home address</label>
+              <textarea id="f_address" rows="2" placeholder="Address"></textarea>
+            </div>
+          </div>
+
+          <div class="btn-group" style="margin-top:10px">
+            <input type="file" id="avatarFile" accept="image/*" style="display:none">
+            <button id="btnAvatar" class="btn secondary" data-i18n="profile.changeAvatar">Change Avatar</button>
+            <button id="btnSaveProfile" class="btn" data-i18n="profile.save">Save Profile</button>
+            <button id="btnResetPwd" class="btn secondary" data-i18n="profile.resetpwd">Send Password Reset</button>
+            <button id="btnBlock" class="btn danger" data-i18n="profile.block">Block</button>
+            <button id="btnUnblock" class="btn secondary" data-i18n="profile.unblock">Unblock</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 data-i18n="wallet.title">Wallet Management</h3>
+          <div class="row row-2">
+            <div>
+              <label data-i18n="wallet.amount">Amount (XAF)</label>
+              <input id="walletAmount" type="number" step="1" placeholder="0">
+            </div>
+            <div class="row">
+              <label data-i18n="wallet.note">Note (optional)</label>
+              <input id="walletNote" type="text" placeholder="Reason / note">
+            </div>
+          </div>
+          <div class="btn-group" style="margin-top:10px">
+            <button id="btnCredit" class="btn" data-i18n="wallet.credit">Add Funds</button>
+            <button id="btnDebit" class="btn secondary" data-i18n="wallet.debit">Reduce Funds</button>
+          </div>
+          <p class="muted" id="walletHint" data-i18n="wallet.hint">Transactions are logged to this customer’s history.</p>
+        </div>
+      </section>
+
+      <!-- Orders + Chart -->
+      <section class="grid cols-2">
+        <div class="card">
+          <h3 data-i18n="orders.title">Orders</h3>
+          <div class="row row-4">
+            <div><label data-i18n="orders.total">Total</label><div id="ordTotal" class="value">0</div></div>
+            <div><label data-i18n="orders.delivered">Delivered</label><div id="ordDelivered" class="value">0</div></div>
+            <div><label data-i18n="orders.pending">Pending</label><div id="ordPending" class="value">0</div></div>
+            <div><label data-i18n="orders.refunded">Refunded</label><div id="ordRefunded" class="value">0</div></div>
+          </div>
+          <div style="overflow:auto;margin-top:10px">
+            <table id="ordersTable" aria-label="Orders">
+              <thead>
+                <tr>
+                  <th data-i18n="th.id">ID</th>
+                  <th data-i18n="th.date">Date</th>
+                  <th data-i18n="th.amount">Amount</th>
+                  <th data-i18n="th.status">Status</th>
+                  <th data-i18n="th.payment">Payment</th>
+                  <th data-i18n="th.region">Region</th>
+                  <th data-i18n="th.proof">Proof</th>
+                </tr>
+              </thead>
+              <tbody id="ordersTbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <h3 data-i18n="chart.title">Monthly Orders</h3>
+          <canvas id="ordersChart" height="220"></canvas>
+        </div>
+      </section>
+
+      <!-- Chat -->
+      <section class="card">
+        <h3 data-i18n="chat.title">Chat with Customer</h3>
+        <div class="chat">
+          <div id="msgs" class="msgs"></div>
+          <div class="row row-2">
+            <input id="msgInput" type="text" placeholder="Type a message…" data-i18n-attr="placeholder" data-i18n-placeholder="chat.placeholder">
+            <button id="btnSend" class="btn" data-i18n="chat.send">Send</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Hidden container for potential phone reCAPTCHA (not used here, but available) -->
+  <div id="recaptcha-container" style="position:fixed;left:-9999px;top:-9999px;"></div>
+
+  <!-- Firebase (modular CDN) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import {
+      getAuth, setPersistence, browserLocalPersistence, onAuthStateChanged,
+      sendPasswordResetEmail, signOut
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-auth.js";
+    import {
+      getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, onSnapshot, orderBy, addDoc, serverTimestamp, runTransaction
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    import {
+      getDatabase, ref as rRef, onValue
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+
+    /* ================== CONFIG ================== */
+    const firebaseConfig = {
+      apiKey: "AIzaSyCz446b_SZF8L1HykjAeHrc9LK9GVWX4Q4",
+      authDomain: "your-shop-3bdd1.firebaseapp.com",
+      projectId: "your-shop-3bdd1",
+      storageBucket: "your-shop-3bdd1.appspot.com",
+      messagingSenderId: "440558238881",
+      appId: "1:440558238881:web:b1594dc8a4bfd9089dc4e0"
+    };
+    /* ✅ Explicit Realtime Database URL to ensure presence reads the correct DB */
+    const RTDB_URL = "https://your-shop-3bdd1-default-rtdb.firebaseio.com";
+
+    // Cloudinary — replace with your values
+    const CLOUDINARY_CLOUD_NAME = "YOUR_CLOUD_NAME";             // <— REPLACE
+    const CLOUDINARY_UNSIGNED_PRESET = "YOUR_UNSIGNED_PRESET";   // <— REPLACE
+
+    /* ================== Helpers ================== */
+    const $ = (s)=>document.querySelector(s);
+    const $$ = (s)=>document.querySelectorAll(s);
+    const fmtXAF = (n)=> (typeof n==="number" ? new Intl.NumberFormat(undefined,{style:"currency",currency:"XAF",maximumFractionDigits:0}).format(n) : "—");
+    const getParam = (k)=> new URLSearchParams(location.search).get(k);
+
+    const State = {
+      lang: localStorage.getItem("lang") || (navigator.language?.startsWith("fr") ? "fr" : "en"),
+      theme: localStorage.getItem("theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"),
+      uid: getParam("uid"),
+      owner: null,
+      customer: null,
+      wallet: null,
+      chart: null
+    };
+
+    const I18N = {
+      en:{
+        "back.dashboard":"Back to Dashboard","btn.signout":"Sign out","chip.owner":"OWNER",
+        "summary.customer":"Customer","summary.wallet":"Wallet","summary.spent":"Total Spent",
+        "profile.title":"Profile","profile.name":"Full name","profile.gender":"Gender","profile.phone":"Phone","profile.email":"Email","profile.region":"Region","profile.birth":"Birth date","profile.address":"Home address","profile.changeAvatar":"Change Avatar","profile.save":"Save Profile","profile.resetpwd":"Send Password Reset","profile.block":"Block","profile.unblock":"Unblock",
+        "opt.choose":"— Choose —","opt.male":"Male","opt.female":"Female","opt.other":"Other",
+        "region.adamawa":"Adamawa","region.centre":"Centre","region.east":"East","region.farnorth":"Far North","region.littoral":"Littoral","region.north":"North","region.northwest":"North-West","region.west":"West","region.south":"South","region.southwest":"South-West",
+        "wallet.title":"Wallet Management","wallet.amount":"Amount (XAF)","wallet.note":"Note (optional)","wallet.credit":"Add Funds","wallet.debit":"Reduce Funds","wallet.hint":"Transactions are logged to this customer’s history.",
+        "orders.title":"Orders","orders.total":"Total","orders.delivered":"Delivered","orders.pending":"Pending","orders.refunded":"Refunded",
+        "th.id":"ID","th.date":"Date","th.amount":"Amount","th.status":"Status","th.payment":"Payment","th.region":"Region","th.proof":"Proof",
+        "chart.title":"Monthly Orders",
+        "chat.title":"Chat with Customer","chat.placeholder":"Type a message…","chat.send":"Send",
+        "err.noauth":"You must be signed in. Redirecting…","err.verify":"Email not verified. Redirecting…","err.notowner":"Access restricted to Owner. Redirecting…","err.nouid":"No customer UID provided in the URL.","err.generic":"Something went wrong.",
+        "ok.saved":"Saved.","ok.credited":"Funds added.","ok.debited":"Funds reduced.","ok.avatar":"Avatar updated.","ok.msg":"Message sent.",
+        "status.online":"Online","status.offline":"Offline","status.seen":"Last seen: {time}",
+        "summary.ordersCount":"{n} orders"
+      },
+      fr:{
+        "back.dashboard":"Retour au tableau","btn.signout":"Se déconnecter","chip.owner":"PROPRIÉTAIRE",
+        "summary.customer":"Client","summary.wallet":"Portefeuille","summary.spent":"Total dépensé",
+        "profile.title":"Profil","profile.name":"Nom complet","profile.gender":"Sexe","profile.phone":"Téléphone","profile.email":"E-mail","profile.region":"Région","profile.birth":"Date de naissance","profile.address":"Adresse","profile.changeAvatar":"Changer l’avatar","profile.save":"Enregistrer le profil","profile.resetpwd":"Envoyer réinitialisation","profile.block":"Bloquer","profile.unblock":"Débloquer",
+        "opt.choose":"— Choisir —","opt.male":"Homme","opt.female":"Femme","opt.other":"Autre",
+        "region.adamawa":"Adamaoua","region.centre":"Centre","region.east":"Est","region.farnorth":"Extrême-Nord","region.littoral":"Littoral","region.north":"Nord","region.northwest":"Nord-Ouest","region.west":"Ouest","region.south":"Sud","region.southwest":"Sud-Ouest",
+        "wallet.title":"Gestion du portefeuille","wallet.amount":"Montant (XAF)","wallet.note":"Note (optionnelle)","wallet.credit":"Ajouter des fonds","wallet.debit":"Réduire des fonds","wallet.hint":"Les transactions sont enregistrées dans l’historique du client.",
+        "orders.title":"Commandes","orders.total":"Total","orders.delivered":"Livrées","orders.pending":"En attente","orders.refunded":"Remboursées",
+        "th.id":"ID","th.date":"Date","th.amount":"Montant","th.status":"Statut","th.payment":"Paiement","th.region":"Région","th.proof":"Preuve",
+        "chart.title":"Commandes mensuelles",
+        "chat.title":"Discussion avec le client","chat.placeholder":"Saisissez un message…","chat.send":"Envoyer",
+        "err.noauth":"Vous devez être connecté. Redirection…","err.verify":"E-mail non vérifié. Redirection…","err.notowner":"Accès réservé au Propriétaire. Redirection…","err.nouid":"Aucun UID client dans l’URL.","err.generic":"Un problème est survenu.",
+        "ok.saved":"Enregistré.","ok.credited":"Fonds ajoutés.","ok.debited":"Fonds réduits.","ok.avatar":"Avatar mis à jour.","ok.msg":"Message envoyé.",
+        "status.online":"En ligne","status.offline":"Hors ligne","status.seen":"Dernière activité : {time}",
+        "summary.ordersCount":"{n} commandes"
+      }
+    };
+    const t=(k,vars={})=>{
+      const str=(I18N[State.lang][k]||k);
+      return str.replace(/\{(\w+)\}/g,(_,m)=> vars[m] ?? "");
+    };
+    function applyLang(){
+      document.documentElement.setAttribute("lang", State.lang);
+      $$("#langToggle").forEach ? $$("#langToggle").forEach(b=>b.textContent=State.lang.toUpperCase()) : ($("#langToggle").textContent=State.lang.toUpperCase());
+      document.querySelectorAll("[data-i18n]").forEach(el=>{ el.textContent = t(el.getAttribute("data-i18n")); });
+      document.querySelectorAll("[data-i18n-attr]").forEach(el=>{
+        const attrs = el.getAttribute("data-i18n-attr").split(",").map(s=>s.trim());
+        attrs.forEach(a=>{
+          const key = el.getAttribute(`data-i18n-${a}`); if(key) el.setAttribute(a, t(key));
+        });
+      });
+    }
+    function applyTheme(){
+      document.documentElement.setAttribute("data-theme", State.theme);
+      document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{
+        m.setAttribute("content", State.theme==="dark" ? "#0b1220" : "#ffffff");
+      });
+      const btn=$("#themeToggle"); if(btn){ btn.textContent="🌓"; btn.title=`Theme: ${State.theme}`; }
+    }
+
+    const showErr=(m)=>{ const el=$("#alertErr"); el.textContent=m; el.classList.add("show"); $("#alertOk").classList.remove("show"); };
+    const showOk =(m)=>{ const el=$("#alertOk");  el.textContent=m; el.classList.add("show"); $("#alertErr").classList.remove("show"); };
+
+    /* ================== Firebase boot ================== */
+    let app, auth, db, rtdb;
+    try{
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db   = getFirestore(app);
+      rtdb = getDatabase(app, RTDB_URL); // ✅ ensure we hit the correct Realtime Database instance
+      await setPersistence(auth, browserLocalPersistence);
+      auth.useDeviceLanguage && auth.useDeviceLanguage();
+    }catch(e){
+      console.error(e);
+      const w=$("#configWarning"); if(w){ w.textContent = (State.lang==="fr" ? "Configuration Firebase invalide." : "Firebase config error."); }
+    }
+
+    /* ================== Guards ================== */
+    if(!State.uid){ showErr(t("err.nouid")); }
+
+    async function isOwner(uid){
+      try{
+        const snap = await getDoc(doc(db,"users",uid));
+        return snap.exists() && snap.data().role === "owner";
+      }catch(_){ return false; }
+    }
+
+    // Subscribe to wallet under either "META/wallet" or "meta/wallet"
+    function subscribeWalletPaths(uid, onChange){
+      const refs = [
+        doc(db,"users",uid,"META","wallet"),
+        doc(db,"users",uid,"meta","wallet")
+      ];
+      let latestUpdatedAt = 0;
+      const unsubs = refs.map(ref =>
+        onSnapshot(ref, (snap)=>{
+          if(!snap.exists()) return;
+          const d = snap.data();
+          // prefer the most recently updated doc if both exist
+          const ts = d.updatedAt?.toMillis ? d.updatedAt.toMillis() :
+                     (d.updatedAt?.seconds ? d.updatedAt.seconds*1000 : Date.now());
+          if(ts >= latestUpdatedAt){
+            latestUpdatedAt = ts;
+            onChange(d);
+          }
+        })
+      );
+      return ()=> unsubs.forEach(u=>{ try{ u(); }catch(_){} });
+    }
+
+    // Resolve which wallet doc to write to (prefer existing "META", else existing "meta", else create "META")
+    async function getWalletRefPreferred(uid){
+      const refUpper = doc(db,"users",uid,"META","wallet");
+      const refLower = doc(db,"users",uid,"meta","wallet");
+      try{
+        const up = await getDoc(refUpper);
+        if(up.exists()) return refUpper;
+        const lo = await getDoc(refLower);
+        if(lo.exists()) return refLower;
+      }catch(_){}
+      return refUpper;
+    }
+
+    function watchOwnerWallet(uid){
+      subscribeWalletPaths(uid, (data)=>{
+        const bal = data?.balance || 0;
+        const chip = $("#ownerWallet");
+        if(chip) chip.textContent = fmtXAF(bal);
+      });
+    }
+
+    onAuthStateChanged(auth, async (u)=>{
+      if(!u){ showErr(t("err.noauth")); setTimeout(()=>location.assign("login.html"),900); return; }
+      if(!u.emailVerified){ showErr(t("err.verify")); setTimeout(async()=>{ try{ await signOut(auth);}catch(_){ } location.assign("login.html"); },900); return; }
+      if(!(await isOwner(u.uid))){ showErr(t("err.notowner")); setTimeout(async()=>{ try{ await signOut(auth);}catch(_){ } location.assign("login.html"); },900); return; }
+      State.owner = u;
+      $("#ownerEmail").textContent = u.email || "—";
+      watchOwnerWallet(u.uid);
+      bootCustomer(); // safe to load
+    });
+
+    /* ================== Cloudinary helpers (display) ================== */
+    function cloudinaryUrl(publicId, {cloud=CLOUDINARY_CLOUD_NAME, w=176, h=176}={}){
+      if(!cloud || !publicId) return "";
+      // strip accidental prefixes
+      const pid = String(publicId).replace(/^image\/upload\/?/,"").replace(/^v\d+\//,"");
+      // center faces when possible; deliver auto-format/quality
+      return `https://res.cloudinary.com/${cloud}/image/upload/c_fill,g_face:auto,f_auto,q_auto,w_${w},h_${h}/${encodeURIComponent(pid)}`;
+    }
+    function pickAvatarUrl(userData){
+      // Prefer Cloudinary public_id (stored as avatarPublicId / cloudinaryPublicId / avatar_id)
+      const pubId = userData?.avatarPublicId || userData?.cloudinaryPublicId || userData?.avatar_id || null;
+      const cloud = userData?.cloudinaryCloud || CLOUDINARY_CLOUD_NAME || "";
+      if(pubId && cloud){
+        return cloudinaryUrl(pubId, {cloud, w:176, h:176});
+      }
+      // Otherwise any direct URL
+      if(typeof userData?.avatar === "string" && userData.avatar) return userData.avatar;
+      if(typeof userData?.photoURL === "string" && userData.photoURL) return userData.photoURL;
+      // Fallback icon
+      return "https://cdn.jsdelivr.net/gh/edent/SuperTinyIcons/images/svg/user.svg";
+    }
+
+    /* ================== Customer Loads ================== */
+    let ordersChart;
+    function renderOrdersChart(labels,data){
+      if(!ordersChart){
+        ordersChart = new Chart($("#ordersChart"),{
+          type:"line",
+          data:{ labels, datasets:[{ label: (State.lang==="fr"?"Commandes":"Orders"), data, tension:.25, fill:false }]},
+          options:{ responsive:true, plugins:{ legend:{ display:true } } }
+        });
+      }else{
+        ordersChart.data.labels = labels;
+        ordersChart.data.datasets[0].data = data;
+        ordersChart.update();
+      }
+    }
+
+    // set select value case-insensitively
+    function setSelectCaseInsensitive(sel, value){
+      if(!sel) return;
+      const v = (value||"").toString().toLowerCase();
+      let matched = false;
+      for(const opt of sel.options){
+        if(opt.value.toString().toLowerCase() === v){ sel.value = opt.value; matched = true; break; }
+      }
+      if(!matched) sel.value = "";
+    }
+
+    function fillProfile(u){
+      $("#custName").textContent = u.name || "—";
+      $("#custEmail").textContent = u.email || "—";
+      $("#f_name").value  = u.name || "";
+      $("#f_gender").value= u.gender || "";
+      $("#f_phone").value = u.phone || "";
+      $("#f_email").value = u.email || "";
+      setSelectCaseInsensitive($("#f_region"), u.region);
+      $("#f_birth").value = u.birthDate || "";
+      $("#f_address").value = u.homeAddress || "";
+
+      const img=$("#avatarImg");
+      const src = pickAvatarUrl(u);
+      img.src = src;
+      img.alt = u.name ? `${u.name} avatar` : "avatar";
+    }
+
+    async function bootCustomer(){
+      // profile
+      onSnapshot(doc(db,"users",State.uid), (snap)=>{
+        if(!snap.exists()){ showErr(t("err.generic")); return; }
+        const data = snap.data(); State.customer = data;
+        fillProfile(data);
+        $("#btnBlock").style.display = data.blocked ? "none":"inline-block";
+        $("#btnUnblock").style.display = data.blocked ? "inline-block":"none";
+      });
+
+      // wallet (customer) — listen to either META or meta
+      subscribeWalletPaths(State.uid, (w)=>{
+        const wallet = w || { balance:0, currency:"XAF" };
+        State.wallet = wallet;
+        $("#walletBalance").textContent = fmtXAF(wallet.balance||0);
+        $("#walletUpdated").textContent = wallet.updatedAt?.toDate ? (wallet.updatedAt.toDate()).toLocaleString() : "";
+      });
+
+      // orders + totals (merge customerUID and userId)
+      const tbody=$("#ordersTbody");
+      const ordersMap = new Map(); // id -> order
+
+      function applyOrders(){
+        let total=0, delivered=0, pending=0, refunded=0, totalAmount=0;
+        const byMonth = new Map();
+        tbody.innerHTML="";
+
+        Array.from(ordersMap.values()).sort((a,b)=>{
+          const ta=a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt?.seconds? a.createdAt.seconds*1000 : 0);
+          const tb=b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt?.seconds? b.createdAt.seconds*1000 : 0);
+          return tb-ta;
+        }).forEach(entry=>{
+          const o=entry.data, id=entry.id;
+          total++;
+          const st=(o.status||"").toLowerCase();
+          if(st.includes("deliver")) delivered++;
+          else if(st.includes("refund")) refunded++;
+          else pending++;
+
+          const amt=Number(o.amount || o.grandTotal || 0);
+          if(st.includes("deliver") || st.includes("paid")) totalAmount += amt;
+
+          const d=o.createdAt?.toDate ? o.createdAt.toDate()
+                 : (o.createdAt?.seconds? new Date(o.createdAt.seconds*1000)
+                 : new Date());
+          const ym = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+          byMonth.set(ym, (byMonth.get(ym)||0)+1);
+
+          const tr=document.createElement("tr");
+          tr.innerHTML = `
+            <td>${id}</td>
+            <td>${d.toLocaleString()}</td>
+            <td>${fmtXAF(amt)}</td>
+            <td>${o.status||"—"}</td>
+            <td>${(o.payment && (o.payment.method||o.payment)) || "—"}</td>
+            <td>${o.region||o.shippingRegion||"—"}</td>
+            <td>${o.proofUrl? `<a href="${o.proofUrl}" target="_blank" rel="noopener">Link</a>`:"—"}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        $("#ordTotal").textContent = total;
+        $("#ordDelivered").textContent = delivered;
+        $("#ordPending").textContent = pending;
+        $("#ordRefunded").textContent = refunded;
+
+        $("#totalSpent").textContent = fmtXAF(totalAmount);
+        $("#ordersCount").textContent = t("summary.ordersCount",{n: total});
+
+        const months = Array.from(byMonth.keys()).sort();
+        const series = months.map(m=> byMonth.get(m));
+        renderOrdersChart(months, series);
+      }
+
+      // listen with field = customerUID
+      onSnapshot(
+        query(collection(db,"orders"), where("customerUID","==", State.uid), orderBy("createdAt","desc")),
+        (qs)=>{ qs.forEach(d=> ordersMap.set(d.id,{id:d.id, data:d.data()})); applyOrders(); },
+        (e)=>{ console.warn("orders(customerUID) error", e); }
+      );
+
+      // also listen with field = userId
+      onSnapshot(
+        query(collection(db,"orders"), where("userId","==", State.uid), orderBy("createdAt","desc")),
+        (qs)=>{ qs.forEach(d=> ordersMap.set(d.id,{id:d.id, data:d.data()})); applyOrders(); },
+        (e)=>{ console.warn("orders(userId) error", e); }
+      );
+
+      // realtime presence (RTDB)
+      const sref = rRef(rtdb, `status/${State.uid}`);
+      onValue(sref, (snap)=>{
+        const st = snap.val();
+        if(st?.state==="online"){
+          $("#custStatus").textContent = t("status.online");
+        }else{
+          const last = st?.last_changed ? new Date(st.last_changed) : null;
+          $("#custStatus").textContent = last ? t("status.seen",{time:last.toLocaleString()}) : t("status.offline");
+        }
+      });
+
+      /* 🔎 ADDITION: Firestore presence mirror (fallback / also shows lastSeen)
+         This mirrors the “Online users” snippet you provided, but scoped to this
+         single customer page and using your existing v10 SDK. */
+      try{
+        onSnapshot(doc(db, "presence", State.uid), (snap)=>{
+          if(!snap.exists()) return;
+          const p = snap.data();
+          if(p.online){
+            $("#custStatus").textContent = t("status.online");
+          }else{
+            const last = p.lastSeen?.toDate
+              ? p.lastSeen.toDate()
+              : (p.lastSeen?.seconds ? new Date(p.lastSeen.seconds*1000) : null);
+            $("#custStatus").textContent = last ? t("status.seen",{time:last.toLocaleString()}) : t("status.offline");
+          }
+        });
+      }catch(e){ console.warn("presence(fs) watch error", e); }
+    }
+
+    /* ================== Actions ================== */
+    // toggles
+    $("#langToggle").addEventListener("click", ()=>{ State.lang=State.lang==="en"?"fr":"en"; localStorage.setItem("lang",State.lang); applyLang(); });
+    $("#themeToggle").addEventListener("click", ()=>{ State.theme=State.theme==="light"?"dark":"light"; localStorage.setItem("theme",State.theme); applyTheme(); });
+
+    // sign out
+    $("#signOutBtn").addEventListener("click", async ()=>{
+      try{ await signOut(auth); }catch(_){}
+      location.assign("login.html");
+    });
+
+    // avatar (upload to Cloudinary; also store public_id for perfect rendering)
+    $("#btnAvatar").addEventListener("click", ()=> $("#avatarFile").click());
+    $("#avatarFile").addEventListener("change", async (e)=>{
+      const file = e.target.files?.[0]; if(!file) return;
+      if(!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UNSIGNED_PRESET){
+        return showErr(State.lang==="fr" ? "Cloudinary non configuré (nom/preset manquants)." : "Cloudinary not configured (missing cloud name/preset).");
+      }
+      try{
+        const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/upload`;
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("upload_preset", CLOUDINARY_UNSIGNED_PRESET);
+        const res = await fetch(url,{ method:"POST", body:fd });
+        const data = await res.json();
+        if(data.error) throw new Error(data.error.message || "Upload failed");
+
+        // Save both the secure URL and the public_id for crisp transformed display later
+        await updateDoc(doc(db,"users",State.uid), {
+          avatar: data.secure_url,
+          avatarPublicId: data.public_id,
+          cloudinaryCloud: CLOUDINARY_CLOUD_NAME,
+          updatedAt: serverTimestamp()
+        });
+        showOk(t("ok.avatar"));
+      }catch(err){ console.error(err); showErr(t("err.generic")); }
+    });
+
+    // save profile (force region lowercase on write; select is matched case-insensitively on read)
+    $("#btnSaveProfile").addEventListener("click", async ()=>{
+      try{
+        const rawRegion = $("#f_region").value || "";
+        const payload = {
+          name: $("#f_name").value.trim(),
+          gender: $("#f_gender").value || null,
+          phone: $("#f_phone").value.trim() || null,
+          email: $("#f_email").value.trim() || null,
+          region: rawRegion ? rawRegion.toLowerCase() : null,
+          birthDate: $("#f_birth").value || null,
+          homeAddress: $("#f_address").value.trim() || null,
+          updatedAt: serverTimestamp()
+        };
+        await updateDoc(doc(db,"users",State.uid), payload);
+        showOk(t("ok.saved"));
+      }catch(e){ console.error(e); showErr(t("err.generic")); }
+    });
+
+    // reset password
+    $("#btnResetPwd").addEventListener("click", async ()=>{
+      const email = $("#f_email").value.trim();
+      if(!email){ return showErr(State.lang==="fr" ? "Aucun e-mail à réinitialiser." : "No email to reset."); }
+      try{ await sendPasswordResetEmail(auth, email); showOk(State.lang==="fr" ? "E-mail envoyé." : "Email sent."); }
+      catch(e){ console.error(e); showErr(t("err.generic")); }
+    });
+
+    // block/unblock
+    $("#btnBlock").addEventListener("click", async ()=>{
+      try{ await updateDoc(doc(db,"users",State.uid), { blocked:true, updatedAt: serverTimestamp() }); showOk(t("ok.saved")); }
+      catch(e){ console.error(e); showErr(t("err.generic")); }
+    });
+    $("#btnUnblock").addEventListener("click", async ()=>{
+      try{ await updateDoc(doc(db,"users",State.uid), { blocked:false, updatedAt: serverTimestamp() }); showOk(t("ok.saved")); }
+      catch(e){ console.error(e); showErr(t("err.generic")); }
+    });
+
+    // wallet credit/debit (two-party transactional transfer)
+    async function walletAdjust(type){
+      const raw = $("#walletAmount").value;
+      const note = $("#walletNote").value.trim();
+      const delta = Number(raw);
+      if(!raw || isNaN(delta) || delta<=0){ return showErr(State.lang==="fr" ? "Montant invalide." : "Invalid amount."); }
+
+      const ownerUid = (State.owner && State.owner.uid) || (auth.currentUser && auth.currentUser.uid);
+      if(!ownerUid){ return showErr(t("err.generic")); }
+
+      const customerWalletRef = await getWalletRefPreferred(State.uid);
+      const ownerWalletRef    = await getWalletRefPreferred(ownerUid);
+
+      try{
+        await runTransaction(db, async (tx)=>{
+          const custSnap  = await tx.get(customerWalletRef);
+          const ownerSnap = await tx.get(ownerWalletRef);
+
+          const custBal  = custSnap.exists()? (custSnap.data().balance||0) : 0;
+          const ownerBal = ownerSnap.exists()? (ownerSnap.data().balance||0) : 0;
+
+          let nextCust = custBal, nextOwner = ownerBal;
+
+          if(type === "credit"){            // Owner -> Customer
+            if(ownerBal - delta < 0) throw new Error("owner_neg");
+            nextCust  = custBal  + delta;
+            nextOwner = ownerBal - delta;
+          }else{                            // "debit" Customer -> Owner
+            if(custBal - delta < 0) throw new Error("cust_neg");
+            nextCust  = custBal  - delta;
+            nextOwner = ownerBal + delta;
+          }
+
+          tx.set(customerWalletRef, { balance: nextCust,  currency:"XAF", updatedAt: serverTimestamp() }, { merge:true });
+          tx.set(ownerWalletRef,    { balance: nextOwner, currency:"XAF", updatedAt: serverTimestamp() }, { merge:true });
+
+          const custTxRef  = doc(collection(db,"users",State.uid,"wallet_tx"));
+          const ownerTxRef = doc(collection(db,"users",ownerUid,"wallet_tx"));
+
+          tx.set(custTxRef, {
+            type: (type==="credit"?"credit":"debit"),
+            amount: delta,
+            note,
+            by:"owner",
+            counterpart: ownerUid,
+            at: serverTimestamp()
+          });
+          tx.set(ownerTxRef, {
+            type: (type==="credit"?"debit":"credit"),
+            amount: delta,
+            note: (note ? note + " " : "") + `(with ${State.uid})`,
+            by:"owner",
+            counterpart: State.uid,
+            at: serverTimestamp()
+          });
+        });
+
+        if(type==="credit") showOk(t("ok.credited")); else showOk(t("ok.debited"));
+        $("#walletAmount").value=""; $("#walletNote").value="";
+      }catch(e){
+        console.error(e);
+        if(e?.code === "permission-denied"){
+          showErr(State.lang==="fr"
+            ? "Règles Firestore : le propriétaire ne peut pas modifier le portefeuille client (permission-denied)."
+            : "Firestore rules: owner cannot modify customer wallet (permission-denied).");
+          return;
+        }
+        if(e.message==="owner_neg"){ showErr(State.lang==="fr" ? "Solde du propriétaire insuffisant." : "Owner balance too low."); }
+        else if(e.message==="cust_neg"){ showErr(State.lang==="fr" ? "Solde client insuffisant." : "Customer balance too low."); }
+        else showErr(t("err.generic"));
+      }
+    }
+    $("#btnCredit").addEventListener("click", ()=> walletAdjust("credit"));
+    $("#btnDebit").addEventListener("click", ()=> walletAdjust("debit"));
+
+    // chat — try both schemas: /chats/{uid}/messages and /messages/{threadId}/msgs
+    const msgsDiv=$("#msgs");
+    let chatTarget = null; // { type:"chats"|"messages", threadId:string }
+
+    function renderMsg(m){
+      const wrap=document.createElement("div");
+      wrap.className = "bubble " + (m.role==="owner" ? "owner":"customer");
+      const ts = m.createdAt?.toDate ? m.createdAt.toDate().toLocaleString() : "";
+      wrap.innerHTML = `
+        <div>${(m.text||"").replace(/</g,"&lt;")}</div>
+        <small>${m.role==="owner" ? "Owner" : "Customer"} • ${ts}</small>
+      `;
+      msgsDiv.appendChild(wrap);
+      msgsDiv.scrollTop = msgsDiv.scrollHeight;
+    }
+
+    function attachChatListenerChats(){
+      const qRef = query(collection(db,"chats", State.uid, "messages"), orderBy("createdAt","asc"));
+      return onSnapshot(qRef,(qs)=>{
+        chatTarget = { type:"chats", threadId: State.uid };
+        msgsDiv.innerHTML="";
+        qs.forEach(d=> renderMsg(d.data()));
+      }, (err)=>{
+        console.warn("chat(/chats) error:", err?.code||err);
+      });
+    }
+
+    function attachChatListenerMessages(threadId){
+      const qRef = query(collection(db,"messages", threadId, "msgs"), orderBy("createdAt","asc"));
+      return onSnapshot(qRef,(qs)=>{
+        chatTarget = { type:"messages", threadId };
+        msgsDiv.innerHTML="";
+        qs.forEach(d=> renderMsg(d.data()));
+      }, (err)=>{
+        console.warn("chat(/messages) error:", err?.code||err);
+      });
+    }
+
+    function watchChat(){
+      attachChatListenerChats();
+      attachChatListenerMessages(State.uid);
+    }
+    watchChat();
+
+    $("#btnSend").addEventListener("click", async ()=>{
+      const text=$("#msgInput").value.trim(); if(!text) return;
+
+      try{
+        if(!chatTarget){
+          return showErr(State.lang==="fr"
+            ? "Impossible d’envoyer : aucune conversation accessible. Ouvrez d’abord un fil depuis l’application client."
+            : "Cannot send: no accessible conversation. Ask the customer to open a help thread first.");
+        }
+
+        if(chatTarget.type === "chats"){
+          await addDoc(collection(db,"chats", chatTarget.threadId, "messages"),{
+            text, role:"owner", createdAt: serverTimestamp()
+          });
+        }else{
+          await addDoc(collection(db,"messages", chatTarget.threadId, "msgs"),{
+            text, role:"owner", createdAt: serverTimestamp()
+          });
+        }
+
+        $("#msgInput").value=""; showOk(t("ok.msg"));
+      }catch(e){
+        console.error(e);
+        if(e?.code === "permission-denied"){
+          showErr(State.lang==="fr"
+            ? "Accès chat refusé par les règles. Créez/ouvrez d’abord le fil côté client."
+            : "Chat write blocked by rules. Create/open the thread from the customer side first.");
+        }else{
+          showErr(t("err.generic"));
+        }
+      }
+    });
+
+    /* ================== Boot UI ================== */
+    (function boot(){
+      const y=new Date().getFullYear(); $("#year").textContent=y;
+      applyLang(); applyTheme();
+
+      if(!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_UNSIGNED_PRESET){
+        console.warn("Cloudinary not configured — avatar upload will be disabled until you set both values.");
+      }
+    })();
+  </script>
+</body>
+</html>
